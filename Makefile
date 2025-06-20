@@ -12,7 +12,6 @@ migration:
 	fi
 	@mkdir -p $(MIGRATIONS_DIR)
 	@touch $(MIGRATIONS_DIR)/$(DATETIME)_$(name).up.sql
-	@touch $(MIGRATIONS_DIR)/$(DATETIME)_$(name).down.sql
 	@echo "Created migration files: $(DATETIME)_$(name).up.sql and $(DATETIME)_$(name).down.sql"
 
 # Command to apply migrations (up)

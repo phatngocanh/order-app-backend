@@ -2,12 +2,13 @@ package validation
 
 import (
 	"encoding/json"
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	httpcommon "github.com/pna/order-app-backend/internal/domain/http_common"
 	"github.com/pna/order-app-backend/internal/utils/error_utils"
 	stringutils "github.com/pna/order-app-backend/internal/utils/string_utils"
-	"net/http"
 )
 
 func BindJsonAndValidate(c *gin.Context, dest interface{}) error {
