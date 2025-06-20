@@ -27,7 +27,10 @@ func InitializeContainer(db database.Db) *controller.ApiContainer {
 	helloWorldService := serviceimplement.NewHelloWorldService(helloWorldRepository, passwordEncoder)
 	helloWorldHandler := v1.NewHelloWorldHandler(helloWorldService)
 	authMiddleware := middleware.NewAuthMiddleware()
-	server := http.NewServer(healthHandler, helloWorldHandler, authMiddleware)
+	userRepository := repositoryimplement.NewUserRepository(db)
+	userService := serviceimplement.NewUserService(userRepository, passwordEncoder)
+	userHandler := v1.NewUserHandler(userService)
+	server := http.NewServer(healthHandler, helloWorldHandler, authMiddleware, userHandler)
 	apiContainer := controller.NewApiContainer(server)
 	return apiContainer
 }
@@ -40,11 +43,11 @@ var container = wire.NewSet(controller.NewApiContainer)
 var serverSet = wire.NewSet(http.NewServer)
 
 // handler === controller | with service and repository layers to form 3 layers architecture
-var handlerSet = wire.NewSet(v1.NewHealthHandler, v1.NewHelloWorldHandler)
+var handlerSet = wire.NewSet(v1.NewHealthHandler, v1.NewHelloWorldHandler, v1.NewUserHandler)
 
-var serviceSet = wire.NewSet(serviceimplement.NewHelloWorldService)
+var serviceSet = wire.NewSet(serviceimplement.NewHelloWorldService, serviceimplement.NewUserService)
 
-var repositorySet = wire.NewSet(repositoryimplement.NewHelloWorldRepository)
+var repositorySet = wire.NewSet(repositoryimplement.NewHelloWorldRepository, repositoryimplement.NewUserRepository)
 
 var middlewareSet = wire.NewSet(middleware.NewAuthMiddleware)
 

@@ -25,6 +25,8 @@ type errorCode struct {
 	INTERNAL_SERVER_ERROR string
 	BAD_REQUEST           string
 	ACCESS_TOKEN_INVALID  string
+	USERNAME_NOT_FOUND    string
+	UNAUTHORIZED          string
 }
 
 var ErrorCode = errorCode{
@@ -33,4 +35,6 @@ var ErrorCode = errorCode{
 	BAD_REQUEST:           "BAD_REQUEST",
 	INTERNAL_SERVER_ERROR: "INTERNAL_SERVER_ERROR",
 	ACCESS_TOKEN_INVALID:  "ACCESS_TOKEN_INVALID",
+	USERNAME_NOT_FOUND:    "USER_NOT_FOUND",
+	UNAUTHORIZED:          "UNAUTHORIZED",
 }

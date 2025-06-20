@@ -36,6 +36,20 @@ func ErrorCodeToHttpResponse(errCode string, field string) (statusCode int, http
 			Field:   field,
 			Code:    ErrorCode.ACCESS_TOKEN_INVALID,
 		})
+	case ErrorCode.USERNAME_NOT_FOUND:
+		statusCode = http.StatusNotFound
+		httpErrResponse = httpcommon.NewErrorResponse(httpcommon.Error{
+			Message: "Username not found",
+			Field:   field,
+			Code:    ErrorCode.USERNAME_NOT_FOUND,
+		})
+	case ErrorCode.UNAUTHORIZED:
+		statusCode = http.StatusUnauthorized
+		httpErrResponse = httpcommon.NewErrorResponse(httpcommon.Error{
+			Message: "Unauthorized",
+			Field:   field,
+			Code:    ErrorCode.UNAUTHORIZED,
+		})
 	default:
 		statusCode = http.StatusInternalServerError
 		httpErrResponse = httpcommon.NewErrorResponse(httpcommon.Error{

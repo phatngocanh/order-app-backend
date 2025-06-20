@@ -10,6 +10,7 @@ import (
 func MapRoutes(router *gin.Engine,
 	healHandler *HealthHandler,
 	helloWorldHandler *HelloWorldHandler,
+	userHandler *UserHandler,
 	authMiddleware *middleware.AuthMiddleware,
 ) {
 	v1 := router.Group("/api/v1")
@@ -21,6 +22,10 @@ func MapRoutes(router *gin.Engine,
 		hello := v1.Group("/hello-world")
 		{
 			hello.GET("", helloWorldHandler.HelloWorld)
+		}
+		users := v1.Group("/users")
+		{
+			users.POST("/login", userHandler.Login)
 		}
 	}
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))

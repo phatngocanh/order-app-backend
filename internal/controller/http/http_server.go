@@ -2,10 +2,11 @@ package http
 
 import (
 	"fmt"
-	"github.com/pna/order-app-backend/internal/controller/http/middleware"
 	"net/http"
 	"os"
 	"strconv"
+
+	"github.com/pna/order-app-backend/internal/controller/http/middleware"
 
 	"github.com/gin-gonic/gin"
 
@@ -16,17 +17,20 @@ type Server struct {
 	healthHandler     *v1.HealthHandler
 	helloWorldHandler *v1.HelloWorldHandler
 	authMiddleware    *middleware.AuthMiddleware
+	userHandler       *v1.UserHandler
 }
 
 func NewServer(
 	healthHandler *v1.HealthHandler,
 	helloWorldHandler *v1.HelloWorldHandler,
 	authMiddleware *middleware.AuthMiddleware,
+	userHandler *v1.UserHandler,
 ) *Server {
 	return &Server{
 		healthHandler:     healthHandler,
 		helloWorldHandler: helloWorldHandler,
 		authMiddleware:    authMiddleware,
+		userHandler:       userHandler,
 	}
 }
 
@@ -43,6 +47,7 @@ func (s *Server) Run() {
 		router,
 		s.healthHandler,
 		s.helloWorldHandler,
+		s.userHandler,
 		s.authMiddleware,
 	)
 	err := httpServerInstance.ListenAndServe()
