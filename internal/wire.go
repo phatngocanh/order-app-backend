@@ -29,16 +29,19 @@ var handlerSet = wire.NewSet(
 	v1.NewHealthHandler,
 	v1.NewHelloWorldHandler,
 	v1.NewUserHandler,
+	v1.NewProductHandler,
 )
 
 var serviceSet = wire.NewSet(
 	serviceimplement.NewHelloWorldService,
 	serviceimplement.NewUserService,
+	serviceimplement.NewProductService,
 )
 
 var repositorySet = wire.NewSet(
 	repositoryimplement.NewHelloWorldRepository,
 	repositoryimplement.NewUserRepository,
+	repositoryimplement.NewProductRepository,
 )
 
 var middlewareSet = wire.NewSet(

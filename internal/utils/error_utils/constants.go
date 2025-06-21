@@ -27,6 +27,9 @@ type errorCode struct {
 	ACCESS_TOKEN_INVALID  string
 	USERNAME_NOT_FOUND    string
 	UNAUTHORIZED          string
+
+	// generic
+	NOT_FOUND string
 }
 
 var ErrorCode = errorCode{
@@ -37,4 +40,5 @@ var ErrorCode = errorCode{
 	ACCESS_TOKEN_INVALID:  "ACCESS_TOKEN_INVALID",
 	USERNAME_NOT_FOUND:    "USER_NOT_FOUND",
 	UNAUTHORIZED:          "UNAUTHORIZED",
+	NOT_FOUND:             "NOT_FOUND",
 }

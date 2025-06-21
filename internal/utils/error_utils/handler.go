@@ -43,6 +43,13 @@ func ErrorCodeToHttpResponse(errCode string, field string) (statusCode int, http
 			Field:   field,
 			Code:    ErrorCode.USERNAME_NOT_FOUND,
 		})
+	case ErrorCode.NOT_FOUND:
+		statusCode = http.StatusNotFound
+		httpErrResponse = httpcommon.NewErrorResponse(httpcommon.Error{
+			Message: "Resource not found",
+			Field:   field,
+			Code:    ErrorCode.NOT_FOUND,
+		})
 	case ErrorCode.UNAUTHORIZED:
 		statusCode = http.StatusUnauthorized
 		httpErrResponse = httpcommon.NewErrorResponse(httpcommon.Error{
