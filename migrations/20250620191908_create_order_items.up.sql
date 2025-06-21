@@ -8,6 +8,7 @@ CREATE TABLE order_items (
     selling_price INT NOT NULL COMMENT 'Giá bán của sản phẩm (VND)',
     discount INT DEFAULT 0 COMMENT 'Chiết khấu (%)',
     final_amount INT COMMENT 'Số tiền cuối cùng sau khi trừ chiết khấu (VND)',
+    export_from ENUM('INVENTORY', 'EXTERNAL') DEFAULT NULL COMMENT 'Nguồn xuất: từ xưởng hoặc từ bên ngoài',
     FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
     FOREIGN KEY (product_id) REFERENCES products(id)
 );

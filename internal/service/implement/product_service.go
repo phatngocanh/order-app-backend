@@ -25,7 +25,6 @@ func (s *ProductService) Create(ctx *gin.Context, request model.CreateProductReq
 	product := &entity.Product{
 		Name:          request.Name,
 		Spec:          request.Spec,
-		Type:          request.Type,
 		OriginalPrice: request.OriginalPrice,
 	}
 
@@ -41,7 +40,6 @@ func (s *ProductService) Create(ctx *gin.Context, request model.CreateProductReq
 		ID:            product.ID,
 		Name:          product.Name,
 		Spec:          product.Spec,
-		Type:          product.Type,
 		OriginalPrice: product.OriginalPrice,
 	}, ""
 }
@@ -63,7 +61,6 @@ func (s *ProductService) Update(ctx *gin.Context, request model.UpdateProductReq
 		ID:            request.ID,
 		Name:          request.Name,
 		Spec:          request.Spec,
-		Type:          request.Type,
 		OriginalPrice: request.OriginalPrice,
 	}
 
@@ -79,7 +76,6 @@ func (s *ProductService) Update(ctx *gin.Context, request model.UpdateProductReq
 		ID:            product.ID,
 		Name:          product.Name,
 		Spec:          product.Spec,
-		Type:          product.Type,
 		OriginalPrice: product.OriginalPrice,
 	}, ""
 }
@@ -99,7 +95,6 @@ func (s *ProductService) GetAll(ctx *gin.Context) (*model.GetAllProductsResponse
 			ID:            product.ID,
 			Name:          product.Name,
 			Spec:          product.Spec,
-			Type:          product.Type,
 			OriginalPrice: product.OriginalPrice,
 		}
 	}
@@ -127,7 +122,6 @@ func (s *ProductService) GetOne(ctx *gin.Context, id int) (*model.GetOneProductR
 			ID:            product.ID,
 			Name:          product.Name,
 			Spec:          product.Spec,
-			Type:          product.Type,
 			OriginalPrice: product.OriginalPrice,
 		},
 	}, ""

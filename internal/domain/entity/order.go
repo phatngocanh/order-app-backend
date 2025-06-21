@@ -11,15 +11,15 @@ type Order struct {
 }
 
 type orderDeliveryStatus struct {
-	CHUA_GIAO       string
-	DA_GIAO         string
-	CHUA_THANH_TOAN string
-	HOAN_THANH      string
+	PENDING   string
+	DELIVERED string
+	UNPAID    string
+	COMPLETED string
 }
 
 var OrderDeliveryStatus = orderDeliveryStatus{
-	CHUA_GIAO:       "CHUA_GIAO",
-	DA_GIAO:         "DA_GIAO",
-	CHUA_THANH_TOAN: "CHUA_THANH_TOAN",
-	HOAN_THANH:      "HOAN_THANH",
+	PENDING:   "PENDING",
+	DELIVERED: "DELIVERED",
+	UNPAID:    "UNPAID",
+	COMPLETED: "COMPLETED",
 }
