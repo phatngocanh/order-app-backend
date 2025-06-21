@@ -7,3 +7,13 @@ type Customer struct {
 	Address      string `db:"address"`
 	LocationType string `db:"location_type"`
 }
+
+type customerLocationType struct {
+	TINH      string
+	THANH_PHO string
+}
+
+var CustomerLocationType = customerLocationType{
+	TINH:      "TINH",
+	THANH_PHO: "THANH_PHO",
+}

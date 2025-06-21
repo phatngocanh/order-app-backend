@@ -60,6 +60,7 @@ func (s *UserService) Login(ctx *gin.Context, request model.LoginRequest) (*mode
 	}
 
 	return &model.LoginResponse{
-		Token: token,
+		Token:    token,
+		Username: user.Username,
 	}, ""
 }

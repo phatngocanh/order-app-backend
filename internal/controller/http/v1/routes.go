@@ -13,6 +13,9 @@ func MapRoutes(router *gin.Engine,
 	userHandler *UserHandler,
 	authMiddleware *middleware.AuthMiddleware,
 ) {
+	// Apply CORS middleware to all routes
+	router.Use(middleware.CorsMiddleware())
+
 	v1 := router.Group("/api/v1")
 	{
 		health := v1.Group("/health")
