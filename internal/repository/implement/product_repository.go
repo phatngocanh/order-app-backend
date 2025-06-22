@@ -2,6 +2,7 @@ package repositoryimplement
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/pna/order-app-backend/internal/database"
@@ -64,12 +65,28 @@ func (repo *ProductRepository) GetOneByIDQuery(ctx context.Context, id int, tx *
 func (repo *ProductRepository) CreateCommand(ctx context.Context, product *entity.Product, tx *sqlx.Tx) error {
 	insertQuery := `INSERT INTO products(name, spec, original_price) VALUES (:name, :spec, :original_price)`
 
+	var result sql.Result
+	var err error
+
 	if tx != nil {
-		_, err := tx.NamedExecContext(ctx, insertQuery, product)
+		result, err = tx.NamedExecContext(ctx, insertQuery, product)
+	} else {
+		result, err = repo.db.NamedExecContext(ctx, insertQuery, product)
+	}
+
+	if err != nil {
 		return err
 	}
-	_, err := repo.db.NamedExecContext(ctx, insertQuery, product)
-	return err
+
+	// Get the last inserted ID
+	lastID, err := result.LastInsertId()
+	if err != nil {
+		return err
+	}
+
+	// Set the ID to the product entity
+	product.ID = int(lastID)
+	return nil
 }
 
 func (repo *ProductRepository) UpdateCommand(ctx context.Context, product *entity.Product, tx *sqlx.Tx) error {

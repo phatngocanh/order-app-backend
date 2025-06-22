@@ -31,7 +31,9 @@ func InitializeContainer(db database.Db) *controller.ApiContainer {
 	userService := serviceimplement.NewUserService(userRepository, passwordEncoder)
 	userHandler := v1.NewUserHandler(userService)
 	productRepository := repositoryimplement.NewProductRepository(db)
-	productService := serviceimplement.NewProductService(productRepository)
+	inventoryRepository := repositoryimplement.NewInventoryRepository(db)
+	unitOfWork := repositoryimplement.NewUnitOfWork(db)
+	productService := serviceimplement.NewProductService(productRepository, inventoryRepository, unitOfWork)
 	productHandler := v1.NewProductHandler(productService)
 	server := http.NewServer(healthHandler, helloWorldHandler, authMiddleware, userHandler, productHandler)
 	apiContainer := controller.NewApiContainer(server)
@@ -48,9 +50,9 @@ var serverSet = wire.NewSet(http.NewServer)
 // handler === controller | with service and repository layers to form 3 layers architecture
 var handlerSet = wire.NewSet(v1.NewHealthHandler, v1.NewHelloWorldHandler, v1.NewUserHandler, v1.NewProductHandler)
 
-var serviceSet = wire.NewSet(serviceimplement.NewHelloWorldService, serviceimplement.NewUserService, serviceimplement.NewProductService)
+var serviceSet = wire.NewSet(serviceimplement.NewHelloWorldService, serviceimplement.NewUserService, serviceimplement.NewProductService, serviceimplement.NewInventoryService)
 
-var repositorySet = wire.NewSet(repositoryimplement.NewHelloWorldRepository, repositoryimplement.NewUserRepository, repositoryimplement.NewProductRepository)
+var repositorySet = wire.NewSet(repositoryimplement.NewHelloWorldRepository, repositoryimplement.NewUserRepository, repositoryimplement.NewProductRepository, repositoryimplement.NewInventoryRepository, repositoryimplement.NewUnitOfWork)
 
 var middlewareSet = wire.NewSet(middleware.NewAuthMiddleware)
 

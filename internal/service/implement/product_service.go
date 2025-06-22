@@ -2,6 +2,7 @@ package serviceimplement
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/pna/order-app-backend/internal/domain/entity"
 	"github.com/pna/order-app-backend/internal/domain/model"
 	"github.com/pna/order-app-backend/internal/repository"
@@ -11,16 +12,36 @@ import (
 )
 
 type ProductService struct {
-	productRepository repository.ProductRepository
+	productRepository   repository.ProductRepository
+	inventoryRepository repository.InventoryRepository
+	unitOfWork          repository.UnitOfWork
 }
 
-func NewProductService(productRepository repository.ProductRepository) service.ProductService {
+func NewProductService(productRepository repository.ProductRepository, inventoryRepository repository.InventoryRepository, unitOfWork repository.UnitOfWork) service.ProductService {
 	return &ProductService{
-		productRepository: productRepository,
+		productRepository:   productRepository,
+		inventoryRepository: inventoryRepository,
+		unitOfWork:          unitOfWork,
 	}
 }
 
 func (s *ProductService) Create(ctx *gin.Context, request model.CreateProductRequest) (*model.ProductResponse, string) {
+	// Begin transaction
+	tx, err := s.unitOfWork.Begin(ctx)
+	if err != nil {
+		log.Error("ProductService.Create Error when begin transaction: " + err.Error())
+		return nil, error_utils.ErrorCode.DB_DOWN
+	}
+
+	// Defer rollback in case of error
+	defer func() {
+		if err != nil {
+			if rollbackErr := s.unitOfWork.Rollback(tx); rollbackErr != nil {
+				log.Error("ProductService.Create Error when rollback transaction: " + rollbackErr.Error())
+			}
+		}
+	}()
+
 	// Create product entity
 	product := &entity.Product{
 		Name:          request.Name,
@@ -28,10 +49,30 @@ func (s *ProductService) Create(ctx *gin.Context, request model.CreateProductReq
 		OriginalPrice: request.OriginalPrice,
 	}
 
-	// Save to database
-	err := s.productRepository.CreateCommand(ctx, product, nil)
+	// Save product to database
+	err = s.productRepository.CreateCommand(ctx, product, tx)
 	if err != nil {
 		log.Error("ProductService.Create Error when create product: " + err.Error())
+		return nil, error_utils.ErrorCode.DB_DOWN
+	}
+
+	// Create inventory for the product
+	inventory := &entity.Inventory{
+		ProductID: product.ID,
+		Quantity:  0, // Start with 0 quantity
+		Version:   uuid.New().String(),
+	}
+
+	err = s.inventoryRepository.CreateCommand(ctx, inventory, tx)
+	if err != nil {
+		log.Error("ProductService.Create Error when create inventory: " + err.Error())
+		return nil, error_utils.ErrorCode.DB_DOWN
+	}
+
+	// Commit transaction
+	err = s.unitOfWork.Commit(tx)
+	if err != nil {
+		log.Error("ProductService.Create Error when commit transaction: " + err.Error())
 		return nil, error_utils.ErrorCode.DB_DOWN
 	}
 
