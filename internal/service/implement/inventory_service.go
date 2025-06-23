@@ -1,8 +1,11 @@
 package serviceimplement
 
 import (
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/pna/order-app-backend/internal/domain/entity"
 	"github.com/pna/order-app-backend/internal/domain/model"
 	"github.com/pna/order-app-backend/internal/repository"
 	"github.com/pna/order-app-backend/internal/service"
@@ -11,12 +14,16 @@ import (
 )
 
 type InventoryService struct {
-	inventoryRepository repository.InventoryRepository
+	inventoryRepository        repository.InventoryRepository
+	inventoryHistoryRepository repository.InventoryHistoryRepository
+	unitOfWork                 repository.UnitOfWork
 }
 
-func NewInventoryService(inventoryRepository repository.InventoryRepository) service.InventoryService {
+func NewInventoryService(inventoryRepository repository.InventoryRepository, inventoryHistoryRepository repository.InventoryHistoryRepository, unitOfWork repository.UnitOfWork) service.InventoryService {
 	return &InventoryService{
-		inventoryRepository: inventoryRepository,
+		inventoryRepository:        inventoryRepository,
+		inventoryHistoryRepository: inventoryHistoryRepository,
+		unitOfWork:                 unitOfWork,
 	}
 }
 
@@ -41,9 +48,25 @@ func (s *InventoryService) GetByProductID(ctx *gin.Context, productID int) (*mod
 	}, ""
 }
 
-func (s *InventoryService) UpdateQuantity(ctx *gin.Context, request model.UpdateInventoryQuantityRequest) (*model.InventoryResponse, string) {
+func (s *InventoryService) UpdateQuantity(ctx *gin.Context, productID int, request model.UpdateInventoryQuantityRequest) (*model.InventoryResponse, string) {
+	// Begin transaction
+	tx, err := s.unitOfWork.Begin(ctx)
+	if err != nil {
+		log.Error("InventoryService.UpdateQuantity Error when begin transaction: " + err.Error())
+		return nil, error_utils.ErrorCode.DB_DOWN
+	}
+
+	// Defer rollback in case of error
+	defer func() {
+		if err != nil {
+			if rollbackErr := s.unitOfWork.Rollback(tx); rollbackErr != nil {
+				log.Error("InventoryService.UpdateQuantity Error when rollback transaction: " + rollbackErr.Error())
+			}
+		}
+	}()
+
 	// Check if inventory exists
-	existingInventory, err := s.inventoryRepository.GetOneByProductIDQuery(ctx, request.ProductID, nil)
+	existingInventory, err := s.inventoryRepository.GetOneByProductIDQuery(ctx, productID, tx)
 	if err != nil {
 		log.Error("InventoryService.UpdateQuantity Error when get inventory: " + err.Error())
 		return nil, error_utils.ErrorCode.DB_DOWN
@@ -57,14 +80,36 @@ func (s *InventoryService) UpdateQuantity(ctx *gin.Context, request model.Update
 	newVersion := uuid.New().String()
 
 	// Update inventory quantity
-	err = s.inventoryRepository.UpdateQuantityCommand(ctx, request.ProductID, request.Quantity, newVersion, nil)
+	err = s.inventoryRepository.UpdateQuantityCommand(ctx, productID, request.Quantity, newVersion, tx)
 	if err != nil {
 		log.Error("InventoryService.UpdateQuantity Error when update inventory: " + err.Error())
 		return nil, error_utils.ErrorCode.DB_DOWN
 	}
 
+	// Create inventory history record
+	inventoryHistory := &entity.InventoryHistory{
+		ProductID:    productID,
+		Quantity:     request.Quantity,
+		ImporterName: request.ImporterName,
+		ImportedAt:   time.Now(),
+		Note:         request.Note,
+	}
+
+	err = s.inventoryHistoryRepository.CreateCommand(ctx, inventoryHistory, tx)
+	if err != nil {
+		log.Error("InventoryService.UpdateQuantity Error when create inventory history: " + err.Error())
+		return nil, error_utils.ErrorCode.DB_DOWN
+	}
+
+	// Commit transaction
+	err = s.unitOfWork.Commit(tx)
+	if err != nil {
+		log.Error("InventoryService.UpdateQuantity Error when commit transaction: " + err.Error())
+		return nil, error_utils.ErrorCode.DB_DOWN
+	}
+
 	// Get updated inventory
-	updatedInventory, err := s.inventoryRepository.GetOneByProductIDQuery(ctx, request.ProductID, nil)
+	updatedInventory, err := s.inventoryRepository.GetOneByProductIDQuery(ctx, productID, nil)
 	if err != nil {
 		log.Error("InventoryService.UpdateQuantity Error when get updated inventory: " + err.Error())
 		return nil, error_utils.ErrorCode.DB_DOWN

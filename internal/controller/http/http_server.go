@@ -14,11 +14,13 @@ import (
 )
 
 type Server struct {
-	healthHandler     *v1.HealthHandler
-	helloWorldHandler *v1.HelloWorldHandler
-	authMiddleware    *middleware.AuthMiddleware
-	userHandler       *v1.UserHandler
-	productHandler    *v1.ProductHandler
+	healthHandler           *v1.HealthHandler
+	helloWorldHandler       *v1.HelloWorldHandler
+	authMiddleware          *middleware.AuthMiddleware
+	userHandler             *v1.UserHandler
+	productHandler          *v1.ProductHandler
+	inventoryHandler        *v1.InventoryHandler
+	inventoryHistoryHandler *v1.InventoryHistoryHandler
 }
 
 func NewServer(
@@ -27,13 +29,17 @@ func NewServer(
 	authMiddleware *middleware.AuthMiddleware,
 	userHandler *v1.UserHandler,
 	productHandler *v1.ProductHandler,
+	inventoryHandler *v1.InventoryHandler,
+	inventoryHistoryHandler *v1.InventoryHistoryHandler,
 ) *Server {
 	return &Server{
-		healthHandler:     healthHandler,
-		helloWorldHandler: helloWorldHandler,
-		authMiddleware:    authMiddleware,
-		userHandler:       userHandler,
-		productHandler:    productHandler,
+		healthHandler:           healthHandler,
+		helloWorldHandler:       helloWorldHandler,
+		authMiddleware:          authMiddleware,
+		userHandler:             userHandler,
+		productHandler:          productHandler,
+		inventoryHandler:        inventoryHandler,
+		inventoryHistoryHandler: inventoryHistoryHandler,
 	}
 }
 
@@ -52,6 +58,8 @@ func (s *Server) Run() {
 		s.helloWorldHandler,
 		s.userHandler,
 		s.productHandler,
+		s.inventoryHandler,
+		s.inventoryHistoryHandler,
 		s.authMiddleware,
 	)
 	err := httpServerInstance.ListenAndServe()

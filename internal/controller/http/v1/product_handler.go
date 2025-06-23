@@ -106,9 +106,9 @@ func (h *ProductHandler) GetAll(ctx *gin.Context) {
 // @Failure 400 {object} httpcommon.HttpResponse[any]
 // @Failure 404 {object} httpcommon.HttpResponse[any]
 // @Failure 500 {object} httpcommon.HttpResponse[any]
-// @Router /products/{id} [get]
+// @Router /products/{productId} [get]
 func (h *ProductHandler) GetOne(ctx *gin.Context) {
-	idStr := ctx.Param("id")
+	idStr := ctx.Param("productId")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		statusCode, errResponse := error_utils.ErrorCodeToHttpResponse(error_utils.ErrorCode.BAD_REQUEST, "id")

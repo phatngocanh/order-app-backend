@@ -30,6 +30,8 @@ var handlerSet = wire.NewSet(
 	v1.NewHelloWorldHandler,
 	v1.NewUserHandler,
 	v1.NewProductHandler,
+	v1.NewInventoryHandler,
+	v1.NewInventoryHistoryHandler,
 )
 
 var serviceSet = wire.NewSet(
@@ -37,6 +39,7 @@ var serviceSet = wire.NewSet(
 	serviceimplement.NewUserService,
 	serviceimplement.NewProductService,
 	serviceimplement.NewInventoryService,
+	serviceimplement.NewInventoryHistoryService,
 )
 
 var repositorySet = wire.NewSet(
@@ -44,6 +47,7 @@ var repositorySet = wire.NewSet(
 	repositoryimplement.NewUserRepository,
 	repositoryimplement.NewProductRepository,
 	repositoryimplement.NewInventoryRepository,
+	repositoryimplement.NewInventoryHistoryRepository,
 	repositoryimplement.NewUnitOfWork,
 )
 

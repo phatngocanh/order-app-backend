@@ -12,6 +12,8 @@ func MapRoutes(router *gin.Engine,
 	helloWorldHandler *HelloWorldHandler,
 	userHandler *UserHandler,
 	productHandler *ProductHandler,
+	inventoryHandler *InventoryHandler,
+	inventoryHistoryHandler *InventoryHistoryHandler,
 	authMiddleware *middleware.AuthMiddleware,
 ) {
 	// Apply CORS middleware to all routes
@@ -36,7 +38,10 @@ func MapRoutes(router *gin.Engine,
 			products.POST("", authMiddleware.VerifyAccessToken, productHandler.Create)
 			products.PUT("", authMiddleware.VerifyAccessToken, productHandler.Update)
 			products.GET("", authMiddleware.VerifyAccessToken, productHandler.GetAll)
-			products.GET("/:id", authMiddleware.VerifyAccessToken, productHandler.GetOne)
+			products.GET("/:productId", authMiddleware.VerifyAccessToken, productHandler.GetOne)
+			products.GET("/:productId/inventories", authMiddleware.VerifyAccessToken, inventoryHandler.GetByProductID)
+			products.PUT("/:productId/inventories/quantity", authMiddleware.VerifyAccessToken, inventoryHandler.UpdateQuantity)
+			products.GET("/:productId/inventories/histories", authMiddleware.VerifyAccessToken, inventoryHistoryHandler.GetAll)
 		}
 	}
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
