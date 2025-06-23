@@ -1,6 +1,7 @@
 package serviceimplement
 
 import (
+	"errors"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -80,10 +81,8 @@ func (s *InventoryService) UpdateQuantity(ctx *gin.Context, productID int, reque
 
 	// Defer rollback in case of error
 	defer func() {
-		if err != nil {
-			if rollbackErr := s.unitOfWork.Rollback(tx); rollbackErr != nil {
-				log.Error("InventoryService.UpdateQuantity Error when rollback transaction: " + rollbackErr.Error())
-			}
+		if rollbackErr := s.unitOfWork.Rollback(tx); rollbackErr != nil {
+			log.Error("InventoryService.UpdateQuantity Error when rollback transaction: " + rollbackErr.Error())
 		}
 	}()
 
@@ -101,7 +100,7 @@ func (s *InventoryService) UpdateQuantity(ctx *gin.Context, productID int, reque
 	// Check if version matches
 	if existingInventory.Version != request.Version {
 		log.Error("InventoryService.UpdateQuantity Error: version mismatch")
-		return nil, error_utils.ErrorCode.BAD_REQUEST
+		return nil, error_utils.ErrorCode.INVENTORY_VERSION_MISMATCH
 	}
 
 	// Generate new version UUID
@@ -113,11 +112,9 @@ func (s *InventoryService) UpdateQuantity(ctx *gin.Context, productID int, reque
 		log.Error("InventoryService.UpdateQuantity Error when update inventory: " + err.Error())
 
 		// Check for specific error types
-		if _, ok := err.(*error_utils.ConstraintViolationError); ok {
-			return nil, error_utils.ErrorCode.BAD_REQUEST
-		}
-		if _, ok := err.(*error_utils.VersionMismatchError); ok {
-			return nil, error_utils.ErrorCode.BAD_REQUEST
+		var constraintViolationError *error_utils.ConstraintViolationError
+		if errors.As(err, &constraintViolationError) {
+			return nil, error_utils.ErrorCode.INVENTORY_QUANTITY_NEGATIVE
 		}
 
 		return nil, error_utils.ErrorCode.DB_DOWN
