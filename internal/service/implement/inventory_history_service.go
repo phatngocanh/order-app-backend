@@ -34,12 +34,13 @@ func (s *InventoryHistoryService) GetAll(ctx *gin.Context, productID int) (*mode
 	inventoryHistoryResponses := make([]model.InventoryHistoryResponse, len(inventoryHistories))
 	for i, inventoryHistory := range inventoryHistories {
 		inventoryHistoryResponses[i] = model.InventoryHistoryResponse{
-			ID:           inventoryHistory.ID,
-			ProductID:    inventoryHistory.ProductID,
-			Quantity:     inventoryHistory.Quantity,
-			ImporterName: inventoryHistory.ImporterName,
-			ImportedAt:   inventoryHistory.ImportedAt,
-			Note:         inventoryHistory.Note,
+			ID:            inventoryHistory.ID,
+			ProductID:     inventoryHistory.ProductID,
+			Quantity:      inventoryHistory.Quantity,
+			FinalQuantity: inventoryHistory.FinalQuantity,
+			ImporterName:  inventoryHistory.ImporterName,
+			ImportedAt:    inventoryHistory.ImportedAt,
+			Note:          inventoryHistory.Note,
 		}
 	}
 
@@ -67,11 +68,12 @@ func (s *InventoryHistoryService) Create(ctx *gin.Context, request model.CreateI
 
 	// Return response
 	return &model.InventoryHistoryResponse{
-		ID:           inventoryHistory.ID,
-		ProductID:    inventoryHistory.ProductID,
-		Quantity:     inventoryHistory.Quantity,
-		ImporterName: inventoryHistory.ImporterName,
-		ImportedAt:   inventoryHistory.ImportedAt,
-		Note:         inventoryHistory.Note,
+		ID:            inventoryHistory.ID,
+		ProductID:     inventoryHistory.ProductID,
+		Quantity:      inventoryHistory.Quantity,
+		FinalQuantity: inventoryHistory.FinalQuantity,
+		ImporterName:  inventoryHistory.ImporterName,
+		ImportedAt:    inventoryHistory.ImportedAt,
+		Note:          inventoryHistory.Note,
 	}, ""
 }

@@ -1,0 +1,1 @@
+ALTER TABLE inventory_histories ADD COLUMN final_quantity INT NOT NULL DEFAULT 0; 

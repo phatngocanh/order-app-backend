@@ -41,7 +41,7 @@ func (repo *InventoryHistoryRepository) GetAllByProductIDQuery(ctx context.Conte
 }
 
 func (repo *InventoryHistoryRepository) CreateCommand(ctx context.Context, inventoryHistory *entity.InventoryHistory, tx *sqlx.Tx) error {
-	insertQuery := `INSERT INTO inventory_histories(product_id, quantity, importer_name, imported_at, note) VALUES (:product_id, :quantity, :importer_name, :imported_at, :note)`
+	insertQuery := `INSERT INTO inventory_histories(product_id, quantity, final_quantity, importer_name, imported_at, note) VALUES (:product_id, :quantity, :final_quantity, :importer_name, :imported_at, :note)`
 
 	var result sql.Result
 	var err error

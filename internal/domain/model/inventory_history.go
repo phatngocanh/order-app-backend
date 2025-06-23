@@ -10,12 +10,13 @@ type CreateInventoryHistoryRequest struct {
 }
 
 type InventoryHistoryResponse struct {
-	ID           int       `json:"id"`
-	ProductID    int       `json:"product_id"`
-	Quantity     int       `json:"quantity"`
-	ImporterName string    `json:"importer_name"`
-	ImportedAt   time.Time `json:"imported_at"`
-	Note         string    `json:"note"`
+	ID            int       `json:"id"`
+	ProductID     int       `json:"product_id"`
+	Quantity      int       `json:"quantity"`
+	FinalQuantity int       `json:"final_quantity"`
+	ImporterName  string    `json:"importer_name"`
+	ImportedAt    time.Time `json:"imported_at"`
+	Note          string    `json:"note"`
 }
 
 type GetAllInventoryHistoriesResponse struct {

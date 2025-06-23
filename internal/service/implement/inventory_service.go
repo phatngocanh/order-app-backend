@@ -119,11 +119,12 @@ func (s *InventoryService) UpdateQuantity(ctx *gin.Context, productID int, reque
 
 	// Create inventory history record
 	inventoryHistory := &entity.InventoryHistory{
-		ProductID:    productID,
-		Quantity:     request.Quantity,
-		ImporterName: user.Username,
-		ImportedAt:   time.Now(),
-		Note:         request.Note,
+		ProductID:     productID,
+		Quantity:      request.Quantity,
+		FinalQuantity: existingInventory.Quantity + request.Quantity,
+		ImporterName:  user.Username,
+		ImportedAt:    time.Now(),
+		Note:          request.Note,
 	}
 
 	err = s.inventoryHistoryRepository.CreateCommand(ctx, inventoryHistory, tx)
