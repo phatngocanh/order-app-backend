@@ -34,6 +34,7 @@ var handlerSet = wire.NewSet(
 	v1.NewInventoryHistoryHandler,
 	v1.NewCustomerHandler,
 	v1.NewOrderHandler,
+	v1.NewOrderImageHandler,
 )
 
 var serviceSet = wire.NewSet(
@@ -44,6 +45,7 @@ var serviceSet = wire.NewSet(
 	serviceimplement.NewInventoryHistoryService,
 	serviceimplement.NewCustomerService,
 	serviceimplement.NewOrderService,
+	serviceimplement.NewOrderImageService,
 )
 
 var repositorySet = wire.NewSet(
@@ -56,6 +58,7 @@ var repositorySet = wire.NewSet(
 	repositoryimplement.NewCustomerRepository,
 	repositoryimplement.NewOrderRepository,
 	repositoryimplement.NewOrderItemRepository,
+	repositoryimplement.NewOrderImageRepository,
 )
 
 var middlewareSet = wire.NewSet(
@@ -64,6 +67,7 @@ var middlewareSet = wire.NewSet(
 
 var beanSet = wire.NewSet(
 	beanimplement.NewBcryptPasswordEncoder,
+	beanimplement.NewS3Service,
 )
 
 func InitializeContainer(
