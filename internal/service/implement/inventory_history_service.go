@@ -41,6 +41,7 @@ func (s *InventoryHistoryService) GetAll(ctx *gin.Context, productID int) (*mode
 			ImporterName:  inventoryHistory.ImporterName,
 			ImportedAt:    inventoryHistory.ImportedAt,
 			Note:          inventoryHistory.Note,
+			ReferenceID:   inventoryHistory.ReferenceID,
 		}
 	}
 
@@ -75,5 +76,6 @@ func (s *InventoryHistoryService) Create(ctx *gin.Context, request model.CreateI
 		ImporterName:  inventoryHistory.ImporterName,
 		ImportedAt:    inventoryHistory.ImportedAt,
 		Note:          inventoryHistory.Note,
+		ReferenceID:   inventoryHistory.ReferenceID,
 	}, ""
 }

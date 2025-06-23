@@ -10,4 +10,5 @@ type InventoryHistory struct {
 	ImporterName  string    `db:"importer_name"`
 	ImportedAt    time.Time `db:"imported_at"`
 	Note          string    `db:"note"`
+	ReferenceID   *int      `db:"reference_id"`
 }

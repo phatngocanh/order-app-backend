@@ -49,6 +49,25 @@ func NewOrderService(
 	}
 }
 
+// Helper to calculate total amount and product count from order items
+func calculateOrderAmountsAndProductCount(orderItems []entity.OrderItem) (totalAmount int, productCount int) {
+	productIDSet := make(map[int]struct{})
+	totalAmount = 0
+	for _, item := range orderItems {
+		finalAmount := item.FinalAmount
+		if finalAmount == nil {
+			itemTotal := item.Quantity * item.SellingPrice
+			discountAmount := (itemTotal * item.Discount) / 100
+			calculated := itemTotal - discountAmount
+			finalAmount = &calculated
+		}
+		totalAmount += *finalAmount
+		productIDSet[item.ProductID] = struct{}{}
+	}
+	productCount = len(productIDSet)
+	return
+}
+
 func (s *OrderService) GetAll(ctx context.Context) (model.GetAllOrdersResponse, string) {
 	orders, err := s.orderRepo.GetAllQuery(ctx, nil)
 	if err != nil {
@@ -64,6 +83,14 @@ func (s *OrderService) GetAll(ctx context.Context) (model.GetAllOrdersResponse, 
 			continue
 		}
 
+		// Fetch order items to calculate total amount and product count
+		orderItems, err := s.orderItemRepo.GetAllByOrderIDQuery(ctx, o.ID, nil)
+		if err != nil {
+			log.Error("OrderService.GetAll Error fetching order items: " + err.Error())
+			continue
+		}
+		totalAmount, productCount := calculateOrderAmountsAndProductCount(orderItems)
+
 		resp.Orders = append(resp.Orders, model.OrderResponse{
 			ID:                   o.ID,
 			OrderDate:            o.OrderDate,
@@ -76,35 +103,9 @@ func (s *OrderService) GetAll(ctx context.Context) (model.GetAllOrdersResponse, 
 				Phone:   customer.Phone,
 				Address: customer.Address,
 			},
-			OrderItems: func() []model.OrderItemResponse {
-				orderItems, err := s.orderItemRepo.GetAllByOrderIDQuery(ctx, o.ID, nil)
-				if err != nil {
-					log.Error("OrderService.GetAll Error fetching order items: " + err.Error())
-					return []model.OrderItemResponse{}
-				}
-				orderItemResponses := make([]model.OrderItemResponse, 0, len(orderItems))
-				for _, item := range orderItems {
-					product, err := s.productRepo.GetOneByIDQuery(ctx, item.ProductID, nil)
-					if err != nil {
-						log.Error("OrderService.GetAll Error fetching product: " + err.Error())
-						continue
-					}
-					orderItemResponses = append(orderItemResponses, model.OrderItemResponse{
-						ID:            item.ID,
-						OrderID:       item.OrderID,
-						ProductID:     item.ProductID,
-						ProductName:   product.Name,
-						NumberOfBoxes: item.NumberOfBoxes,
-						Spec:          item.Spec,
-						Quantity:      item.Quantity,
-						SellingPrice:  item.SellingPrice,
-						Discount:      item.Discount,
-						FinalAmount:   item.FinalAmount,
-						ExportFrom:    item.ExportFrom,
-					})
-				}
-				return orderItemResponses
-			}(),
+			OrderItems:   nil, // Omit order items in GetAll
+			TotalAmount:  &totalAmount,
+			ProductCount: &productCount,
 		})
 	}
 	return resp, ""
@@ -140,6 +141,13 @@ func (s *OrderService) GetOne(ctx context.Context, id int) (model.GetOneOrderRes
 			log.Error("OrderService.GetOne Error fetching product: " + err.Error())
 			return model.GetOneOrderResponse{}, error_utils.ErrorCode.DB_DOWN
 		}
+		finalAmount := item.FinalAmount
+		if finalAmount == nil {
+			itemTotal := item.Quantity * item.SellingPrice
+			discountAmount := (itemTotal * item.Discount) / 100
+			calculated := itemTotal - discountAmount
+			finalAmount = &calculated
+		}
 		orderItemResponses = append(orderItemResponses, model.OrderItemResponse{
 			ID:            item.ID,
 			OrderID:       item.OrderID,
@@ -150,10 +158,11 @@ func (s *OrderService) GetOne(ctx context.Context, id int) (model.GetOneOrderRes
 			Quantity:      item.Quantity,
 			SellingPrice:  item.SellingPrice,
 			Discount:      item.Discount,
-			FinalAmount:   item.FinalAmount,
+			FinalAmount:   finalAmount,
 			ExportFrom:    item.ExportFrom,
 		})
 	}
+	totalAmount, productCount := calculateOrderAmountsAndProductCount(orderItems)
 
 	resp := model.GetOneOrderResponse{Order: model.OrderResponse{
 		ID:                   order.ID,
@@ -167,7 +176,9 @@ func (s *OrderService) GetOne(ctx context.Context, id int) (model.GetOneOrderRes
 			Phone:   customer.Phone,
 			Address: customer.Address,
 		},
-		OrderItems: orderItemResponses,
+		OrderItems:   orderItemResponses,
+		TotalAmount:  &totalAmount, // Not needed in GetOne
+		ProductCount: &productCount,
 	}}
 	return resp, ""
 }
@@ -294,6 +305,7 @@ func (s *OrderService) Create(ctx *gin.Context, req model.CreateOrderRequest) st
 				ImporterName:  user.Username,
 				ImportedAt:    time.Now(),
 				Note:          "Hàng trừ cho hoá đơn ID: " + strconv.Itoa(orderEntity.ID),
+				ReferenceID:   &orderEntity.ID,
 			}
 			err = s.inventoryHistoryRepo.CreateCommand(ctx, inventoryHistory, tx)
 			if err != nil {
@@ -354,6 +366,7 @@ func (s *OrderService) Create(ctx *gin.Context, req model.CreateOrderRequest) st
 					ImporterName:  user.Username,
 					ImportedAt:    time.Now(),
 					Note:          "Hàng trừ cho hoá đơn ID: " + strconv.Itoa(orderEntity.ID),
+					ReferenceID:   &orderEntity.ID,
 				}
 				err = s.inventoryHistoryRepo.CreateCommand(ctx, inventoryHistory, tx)
 				if err != nil {

@@ -61,8 +61,10 @@ type OrderResponse struct {
 	DeliveryStatus       string              `json:"delivery_status"`
 	DebtStatus           string              `json:"debt_status"`
 	StatusTransitionedAt *time.Time          `json:"status_transitioned_at"`
-	OrderItems           []OrderItemResponse `json:"order_items"`
 	Customer             CustomerResponse    `json:"customer"`
+	OrderItems           []OrderItemResponse `json:"order_items,omitempty"`
+	TotalAmount          *int                `json:"total_amount,omitempty"`
+	ProductCount         *int                `json:"product_count,omitempty"`
 }
 
 type OrderItemResponse struct {

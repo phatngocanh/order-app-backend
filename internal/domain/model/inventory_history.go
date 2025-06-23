@@ -17,6 +17,7 @@ type InventoryHistoryResponse struct {
 	ImporterName  string    `json:"importer_name"`
 	ImportedAt    time.Time `json:"imported_at"`
 	Note          string    `json:"note"`
+	ReferenceID   *int      `json:"reference_id,omitempty"`
 }
 
 type GetAllInventoryHistoriesResponse struct {
