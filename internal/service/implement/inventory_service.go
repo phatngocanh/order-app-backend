@@ -99,7 +99,6 @@ func (s *InventoryService) UpdateQuantity(ctx *gin.Context, productID int, reque
 
 	// Check if version matches
 	if existingInventory.Version != request.Version {
-		log.Error("InventoryService.UpdateQuantity Error: version mismatch")
 		return nil, error_utils.ErrorCode.INVENTORY_VERSION_MISMATCH
 	}
 
@@ -109,8 +108,6 @@ func (s *InventoryService) UpdateQuantity(ctx *gin.Context, productID int, reque
 	// Update inventory quantity with version check
 	err = s.inventoryRepository.UpdateQuantityWithVersionCommand(ctx, productID, request.Quantity, request.Version, newVersion, tx)
 	if err != nil {
-		log.Error("InventoryService.UpdateQuantity Error when update inventory: " + err.Error())
-
 		// Check for specific error types
 		var constraintViolationError *error_utils.ConstraintViolationError
 		if errors.As(err, &constraintViolationError) {
