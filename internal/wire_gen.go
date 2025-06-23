@@ -43,7 +43,11 @@ func InitializeContainer(db database.Db) *controller.ApiContainer {
 	customerRepository := repositoryimplement.NewCustomerRepository(db)
 	customerService := serviceimplement.NewCustomerService(customerRepository, unitOfWork)
 	customerHandler := v1.NewCustomerHandler(customerService)
-	server := http.NewServer(healthHandler, helloWorldHandler, authMiddleware, userHandler, productHandler, inventoryHandler, inventoryHistoryHandler, customerHandler)
+	orderRepository := repositoryimplement.NewOrderRepository(db)
+	orderItemRepository := repositoryimplement.NewOrderItemRepository(db)
+	orderService := serviceimplement.NewOrderService(orderRepository, orderItemRepository, inventoryRepository, inventoryHistoryRepository, userRepository, unitOfWork, productRepository, customerRepository)
+	orderHandler := v1.NewOrderHandler(orderService)
+	server := http.NewServer(healthHandler, helloWorldHandler, authMiddleware, userHandler, productHandler, inventoryHandler, inventoryHistoryHandler, customerHandler, orderHandler)
 	apiContainer := controller.NewApiContainer(server)
 	return apiContainer
 }
@@ -56,11 +60,11 @@ var container = wire.NewSet(controller.NewApiContainer)
 var serverSet = wire.NewSet(http.NewServer)
 
 // handler === controller | with service and repository layers to form 3 layers architecture
-var handlerSet = wire.NewSet(v1.NewHealthHandler, v1.NewHelloWorldHandler, v1.NewUserHandler, v1.NewProductHandler, v1.NewInventoryHandler, v1.NewInventoryHistoryHandler, v1.NewCustomerHandler)
+var handlerSet = wire.NewSet(v1.NewHealthHandler, v1.NewHelloWorldHandler, v1.NewUserHandler, v1.NewProductHandler, v1.NewInventoryHandler, v1.NewInventoryHistoryHandler, v1.NewCustomerHandler, v1.NewOrderHandler)
 
-var serviceSet = wire.NewSet(serviceimplement.NewHelloWorldService, serviceimplement.NewUserService, serviceimplement.NewProductService, serviceimplement.NewInventoryService, serviceimplement.NewInventoryHistoryService, serviceimplement.NewCustomerService)
+var serviceSet = wire.NewSet(serviceimplement.NewHelloWorldService, serviceimplement.NewUserService, serviceimplement.NewProductService, serviceimplement.NewInventoryService, serviceimplement.NewInventoryHistoryService, serviceimplement.NewCustomerService, serviceimplement.NewOrderService)
 
-var repositorySet = wire.NewSet(repositoryimplement.NewHelloWorldRepository, repositoryimplement.NewUserRepository, repositoryimplement.NewProductRepository, repositoryimplement.NewInventoryRepository, repositoryimplement.NewInventoryHistoryRepository, repositoryimplement.NewUnitOfWork, repositoryimplement.NewCustomerRepository)
+var repositorySet = wire.NewSet(repositoryimplement.NewHelloWorldRepository, repositoryimplement.NewUserRepository, repositoryimplement.NewProductRepository, repositoryimplement.NewInventoryRepository, repositoryimplement.NewInventoryHistoryRepository, repositoryimplement.NewUnitOfWork, repositoryimplement.NewCustomerRepository, repositoryimplement.NewOrderRepository, repositoryimplement.NewOrderItemRepository)
 
 var middlewareSet = wire.NewSet(middleware.NewAuthMiddleware)
 

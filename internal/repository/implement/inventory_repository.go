@@ -125,3 +125,49 @@ func (repo *InventoryRepository) UpdateQuantityWithVersionCommand(ctx context.Co
 
 	return nil
 }
+
+func (repo *InventoryRepository) SelectManyForUpdate(ctx context.Context, ids []int, tx *sqlx.Tx) ([]entity.Inventory, error) {
+	if len(ids) == 0 {
+		return []entity.Inventory{}, nil
+	}
+	query, args, err := sqlx.In("SELECT * FROM inventory WHERE id IN (?) FOR UPDATE", ids)
+	if err != nil {
+		return nil, err
+	}
+	query = repo.db.Rebind(query)
+	var inventories []entity.Inventory
+	if tx != nil {
+		err = tx.SelectContext(ctx, &inventories, query, args...)
+	} else {
+		err = repo.db.SelectContext(ctx, &inventories, query, args...)
+	}
+	if err != nil {
+		return nil, err
+	}
+	return inventories, nil
+}
+
+func (repo *InventoryRepository) GetInventoryIDsByProductIDsQuery(ctx context.Context, productIDs []int, tx *sqlx.Tx) ([]int, error) {
+	if len(productIDs) == 0 {
+		return []int{}, nil
+	}
+	query, args, err := sqlx.In("SELECT id FROM inventory WHERE product_id IN (?)", productIDs)
+	if err != nil {
+		return nil, err
+	}
+	query = repo.db.Rebind(query)
+	rows, err := repo.db.QueryxContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var ids []int
+	for rows.Next() {
+		var id int
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+	return ids, nil
+}

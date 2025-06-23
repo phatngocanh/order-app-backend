@@ -22,6 +22,7 @@ type Server struct {
 	inventoryHandler        *v1.InventoryHandler
 	inventoryHistoryHandler *v1.InventoryHistoryHandler
 	customerHandler         *v1.CustomerHandler
+	orderHandler            *v1.OrderHandler
 }
 
 func NewServer(
@@ -33,6 +34,7 @@ func NewServer(
 	inventoryHandler *v1.InventoryHandler,
 	inventoryHistoryHandler *v1.InventoryHistoryHandler,
 	customerHandler *v1.CustomerHandler,
+	orderHandler *v1.OrderHandler,
 
 ) *Server {
 	return &Server{
@@ -44,6 +46,7 @@ func NewServer(
 		inventoryHandler:        inventoryHandler,
 		inventoryHistoryHandler: inventoryHistoryHandler,
 		customerHandler:         customerHandler,
+		orderHandler:            orderHandler,
 	}
 }
 
@@ -65,6 +68,7 @@ func (s *Server) Run() {
 		s.inventoryHandler,
 		s.inventoryHistoryHandler,
 		s.customerHandler,
+		s.orderHandler,
 		s.authMiddleware,
 	)
 	err := httpServerInstance.ListenAndServe()
