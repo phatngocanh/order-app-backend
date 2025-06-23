@@ -81,7 +81,13 @@ func (h *InventoryHandler) UpdateQuantity(ctx *gin.Context) {
 
 	response, errCode := h.inventoryService.UpdateQuantity(ctx, productID, request)
 	if errCode != "" {
-		statusCode, errResponse := error_utils.ErrorCodeToHttpResponse(errCode, "")
+		field := ""
+		if errCode == error_utils.ErrorCode.BAD_REQUEST {
+			// Check if it's a version mismatch or quantity constraint error
+			// For now, we'll use a generic approach since the service doesn't return specific field info
+			field = "quantity" // Default to quantity field
+		}
+		statusCode, errResponse := error_utils.ErrorCodeToHttpResponse(errCode, field)
 		ctx.JSON(statusCode, errResponse)
 		return
 	}

@@ -18,15 +18,15 @@ func NewInventoryHistoryRepository(db database.Db) repository.InventoryHistoryRe
 	return &InventoryHistoryRepository{db: db}
 }
 
-func (repo *InventoryHistoryRepository) GetAllQuery(ctx context.Context, tx *sqlx.Tx) ([]entity.InventoryHistory, error) {
+func (repo *InventoryHistoryRepository) GetAllByProductIDQuery(ctx context.Context, productID int, tx *sqlx.Tx) ([]entity.InventoryHistory, error) {
 	var inventoryHistories []entity.InventoryHistory
-	query := "SELECT * FROM inventory_histories ORDER BY imported_at DESC"
+	query := "SELECT * FROM inventory_histories WHERE product_id = ? ORDER BY imported_at DESC"
 	var err error
 
 	if tx != nil {
-		err = tx.SelectContext(ctx, &inventoryHistories, query)
+		err = tx.SelectContext(ctx, &inventoryHistories, query, productID)
 	} else {
-		err = repo.db.SelectContext(ctx, &inventoryHistories, query)
+		err = repo.db.SelectContext(ctx, &inventoryHistories, query, productID)
 	}
 
 	if err != nil {

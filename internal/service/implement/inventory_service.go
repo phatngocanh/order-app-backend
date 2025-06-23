@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/pna/order-app-backend/internal/controller/http/middleware"
 	"github.com/pna/order-app-backend/internal/domain/entity"
 	"github.com/pna/order-app-backend/internal/domain/model"
 	"github.com/pna/order-app-backend/internal/repository"
@@ -16,13 +17,15 @@ import (
 type InventoryService struct {
 	inventoryRepository        repository.InventoryRepository
 	inventoryHistoryRepository repository.InventoryHistoryRepository
+	userRepository             repository.UserRepository
 	unitOfWork                 repository.UnitOfWork
 }
 
-func NewInventoryService(inventoryRepository repository.InventoryRepository, inventoryHistoryRepository repository.InventoryHistoryRepository, unitOfWork repository.UnitOfWork) service.InventoryService {
+func NewInventoryService(inventoryRepository repository.InventoryRepository, inventoryHistoryRepository repository.InventoryHistoryRepository, userRepository repository.UserRepository, unitOfWork repository.UnitOfWork) service.InventoryService {
 	return &InventoryService{
 		inventoryRepository:        inventoryRepository,
 		inventoryHistoryRepository: inventoryHistoryRepository,
+		userRepository:             userRepository,
 		unitOfWork:                 unitOfWork,
 	}
 }
@@ -49,6 +52,25 @@ func (s *InventoryService) GetByProductID(ctx *gin.Context, productID int) (*mod
 }
 
 func (s *InventoryService) UpdateQuantity(ctx *gin.Context, productID int, request model.UpdateInventoryQuantityRequest) (*model.InventoryResponse, string) {
+	// Get user ID from context
+	userID := middleware.GetUserIdHelper(ctx)
+	if userID == 0 {
+		log.Error("InventoryService.UpdateQuantity Error: user ID not found in context")
+		return nil, error_utils.ErrorCode.UNAUTHORIZED
+	}
+
+	// Get user details to get username
+	user, err := s.userRepository.FindByIDQuery(ctx, int(userID), nil)
+	if err != nil {
+		log.Error("InventoryService.UpdateQuantity Error when get user: " + err.Error())
+		return nil, error_utils.ErrorCode.DB_DOWN
+	}
+
+	if user == nil {
+		log.Error("InventoryService.UpdateQuantity Error: user not found")
+		return nil, error_utils.ErrorCode.UNAUTHORIZED
+	}
+
 	// Begin transaction
 	tx, err := s.unitOfWork.Begin(ctx)
 	if err != nil {
@@ -65,8 +87,8 @@ func (s *InventoryService) UpdateQuantity(ctx *gin.Context, productID int, reque
 		}
 	}()
 
-	// Check if inventory exists
-	existingInventory, err := s.inventoryRepository.GetOneByProductIDQuery(ctx, productID, tx)
+	// Get inventory with FOR UPDATE lock
+	existingInventory, err := s.inventoryRepository.GetOneByProductIDForUpdateQuery(ctx, productID, tx)
 	if err != nil {
 		log.Error("InventoryService.UpdateQuantity Error when get inventory: " + err.Error())
 		return nil, error_utils.ErrorCode.DB_DOWN
@@ -76,13 +98,28 @@ func (s *InventoryService) UpdateQuantity(ctx *gin.Context, productID int, reque
 		return nil, error_utils.ErrorCode.NOT_FOUND
 	}
 
+	// Check if version matches
+	if existingInventory.Version != request.Version {
+		log.Error("InventoryService.UpdateQuantity Error: version mismatch")
+		return nil, error_utils.ErrorCode.BAD_REQUEST
+	}
+
 	// Generate new version UUID
 	newVersion := uuid.New().String()
 
-	// Update inventory quantity
-	err = s.inventoryRepository.UpdateQuantityCommand(ctx, productID, request.Quantity, newVersion, tx)
+	// Update inventory quantity with version check
+	err = s.inventoryRepository.UpdateQuantityWithVersionCommand(ctx, productID, request.Quantity, request.Version, newVersion, tx)
 	if err != nil {
 		log.Error("InventoryService.UpdateQuantity Error when update inventory: " + err.Error())
+
+		// Check for specific error types
+		if _, ok := err.(*error_utils.ConstraintViolationError); ok {
+			return nil, error_utils.ErrorCode.BAD_REQUEST
+		}
+		if _, ok := err.(*error_utils.VersionMismatchError); ok {
+			return nil, error_utils.ErrorCode.BAD_REQUEST
+		}
+
 		return nil, error_utils.ErrorCode.DB_DOWN
 	}
 
@@ -90,7 +127,7 @@ func (s *InventoryService) UpdateQuantity(ctx *gin.Context, productID int, reque
 	inventoryHistory := &entity.InventoryHistory{
 		ProductID:    productID,
 		Quantity:     request.Quantity,
-		ImporterName: request.ImporterName,
+		ImporterName: user.Username,
 		ImportedAt:   time.Now(),
 		Note:         request.Note,
 	}

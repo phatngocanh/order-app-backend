@@ -22,9 +22,9 @@ func NewInventoryHistoryService(inventoryHistoryRepository repository.InventoryH
 	}
 }
 
-func (s *InventoryHistoryService) GetAll(ctx *gin.Context) (*model.GetAllInventoryHistoriesResponse, string) {
+func (s *InventoryHistoryService) GetAll(ctx *gin.Context, productID int) (*model.GetAllInventoryHistoriesResponse, string) {
 	// Get all inventory histories
-	inventoryHistories, err := s.inventoryHistoryRepository.GetAllQuery(ctx, nil)
+	inventoryHistories, err := s.inventoryHistoryRepository.GetAllByProductIDQuery(ctx, productID, nil)
 	if err != nil {
 		log.Error("InventoryHistoryService.GetAll Error when get inventory histories: " + err.Error())
 		return nil, error_utils.ErrorCode.DB_DOWN

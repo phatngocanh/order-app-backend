@@ -2,6 +2,7 @@ package v1
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	httpcommon "github.com/pna/order-app-backend/internal/domain/http_common"
@@ -29,7 +30,13 @@ func NewInventoryHistoryHandler(inventoryHistoryService service.InventoryHistory
 // @Failure 500 {object} httpcommon.HttpResponse[any]
 // @Router /products/{productId}/inventories/histories [get]
 func (h *InventoryHistoryHandler) GetAll(ctx *gin.Context) {
-	response, errCode := h.inventoryHistoryService.GetAll(ctx)
+	productID, err := strconv.Atoi(ctx.Param("productId"))
+	if err != nil {
+		statusCode, errResponse := error_utils.ErrorCodeToHttpResponse(error_utils.ErrorCode.BAD_REQUEST, "productId")
+		ctx.JSON(statusCode, errResponse)
+		return
+	}
+	response, errCode := h.inventoryHistoryService.GetAll(ctx, productID)
 	if errCode != "" {
 		statusCode, errResponse := error_utils.ErrorCodeToHttpResponse(errCode, "")
 		ctx.JSON(statusCode, errResponse)

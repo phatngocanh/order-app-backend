@@ -6,6 +6,24 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
+// ConstraintViolationError represents a database constraint violation
+type ConstraintViolationError struct {
+	Message string
+}
+
+func (e *ConstraintViolationError) Error() string {
+	return e.Message
+}
+
+// VersionMismatchError represents an optimistic locking failure
+type VersionMismatchError struct {
+	Message string
+}
+
+func (e *VersionMismatchError) Error() string {
+	return e.Message
+}
+
 type systemErrorMessage struct {
 	SqlxNoRow string
 	RedisNil  string

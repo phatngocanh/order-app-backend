@@ -17,8 +17,14 @@ func ErrorCodeToHttpResponse(errCode string, field string) (statusCode int, http
 		})
 	case ErrorCode.BAD_REQUEST:
 		statusCode = http.StatusBadRequest
+		message := "Invalid request parameters"
+		if field == "quantity" {
+			message = "Quantity cannot be negative"
+		} else if field == "version" {
+			message = "Version mismatch, please try again"
+		}
 		httpErrResponse = httpcommon.NewErrorResponse(httpcommon.Error{
-			Message: "Invalid request parameters",
+			Message: message,
 			Field:   field,
 			Code:    ErrorCode.BAD_REQUEST,
 		})

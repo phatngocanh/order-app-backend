@@ -8,6 +8,6 @@ import (
 )
 
 type InventoryHistoryRepository interface {
-	GetAllQuery(ctx context.Context, tx *sqlx.Tx) ([]entity.InventoryHistory, error)
+	GetAllByProductIDQuery(ctx context.Context, productID int, tx *sqlx.Tx) ([]entity.InventoryHistory, error)
 	CreateCommand(ctx context.Context, inventoryHistory *entity.InventoryHistory, tx *sqlx.Tx) error
 }

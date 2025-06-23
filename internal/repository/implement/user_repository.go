@@ -47,3 +47,23 @@ func (repo *UserRepository) FindByUsernameQuery(ctx context.Context, username st
 
 	return &user, nil
 }
+
+func (repo *UserRepository) FindByIDQuery(ctx context.Context, id int, tx *sqlx.Tx) (*entity.User, error) {
+	var user entity.User
+	query := "SELECT * FROM users WHERE id = ?"
+	var err error
+	if tx != nil {
+		err = tx.GetContext(ctx, &user, query, id)
+	} else {
+		err = repo.db.GetContext(ctx, &user, query, id)
+	}
+
+	if err != nil {
+		if err.Error() == error_utils.SystemErrorMessage.SqlxNoRow {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return &user, nil
+}

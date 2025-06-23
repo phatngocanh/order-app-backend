@@ -1,9 +1,9 @@
 package model
 
 type UpdateInventoryQuantityRequest struct {
-	Quantity     int    `json:"quantity" binding:"required"`
-	ImporterName string `json:"importer_name" binding:"required"`
-	Note         string `json:"note"`
+	Quantity int    `json:"quantity" binding:"required"`
+	Note     string `json:"note"`
+	Version  string `json:"version" binding:"required"`
 }
 
 type InventoryResponse struct {

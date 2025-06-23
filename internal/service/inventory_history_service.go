@@ -6,6 +6,6 @@ import (
 )
 
 type InventoryHistoryService interface {
-	GetAll(ctx *gin.Context) (*model.GetAllInventoryHistoriesResponse, string)
+	GetAll(ctx *gin.Context, productID int) (*model.GetAllInventoryHistoriesResponse, string)
 	Create(ctx *gin.Context, request model.CreateInventoryHistoryRequest) (*model.InventoryHistoryResponse, string)
 }
