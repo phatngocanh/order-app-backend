@@ -458,3 +458,150 @@ func (s *OrderService) Update(ctx context.Context, req model.UpdateOrderRequest)
 
 	return ""
 }
+
+func (s *OrderService) Delete(ctx *gin.Context, id int) string {
+	// Get user ID from context
+	userID := middleware.GetUserIdHelper(ctx)
+	if userID == 0 {
+		log.Error("OrderService.Delete Error: user ID not found in context")
+		return error_utils.ErrorCode.UNAUTHORIZED
+	}
+
+	// Get user details to get username
+	user, err := s.userRepo.FindByIDQuery(ctx, int(userID), nil)
+	if err != nil {
+		log.Error("OrderService.Delete Error when get user: " + err.Error())
+		return error_utils.ErrorCode.DB_DOWN
+	}
+
+	if user == nil {
+		log.Error("OrderService.Delete Error: user not found")
+		return error_utils.ErrorCode.UNAUTHORIZED
+	}
+
+	// Check if order exists
+	order, err := s.orderRepo.GetOneByIDQuery(ctx, id, nil)
+	if err != nil {
+		log.Error("OrderService.Delete Error when get order: " + err.Error())
+		return error_utils.ErrorCode.DB_DOWN
+	}
+	if order == nil {
+		return error_utils.ErrorCode.NOT_FOUND
+	}
+
+	// Get order items
+	orderItems, err := s.orderItemRepo.GetAllByOrderIDQuery(ctx, id, nil)
+	if err != nil {
+		log.Error("OrderService.Delete Error when get order items: " + err.Error())
+		return error_utils.ErrorCode.DB_DOWN
+	}
+
+	// Filter items that were exported from inventory
+	inventoryItems := make([]entity.OrderItem, 0)
+	for _, item := range orderItems {
+		if item.ExportFrom == entity.OrderExportFrom.INVENTORY {
+			inventoryItems = append(inventoryItems, item)
+		}
+	}
+
+	// If there are inventory items, we need to restore them
+	if len(inventoryItems) > 0 {
+		tx, err := s.unitOfWork.Begin(ctx)
+		if err != nil {
+			log.Error("OrderService.Delete Error when begin transaction: " + err.Error())
+			return error_utils.ErrorCode.DB_DOWN
+		}
+		defer func() {
+			if rollbackErr := s.unitOfWork.Rollback(tx); rollbackErr != nil {
+				log.Error("OrderService.Delete Error when rollback transaction: " + rollbackErr.Error())
+			}
+		}()
+
+		// Get product IDs for inventory items
+		productIDs := make([]int, 0, len(inventoryItems))
+		for _, item := range inventoryItems {
+			productIDs = append(productIDs, item.ProductID)
+		}
+
+		// Get inventory IDs and lock inventories
+		inventoryIDs, err := s.inventoryRepo.GetInventoryIDsByProductIDsQuery(ctx, productIDs, tx)
+		if err != nil {
+			log.Error("OrderService.Delete Error when get inventory IDs: " + err.Error())
+			return error_utils.ErrorCode.DB_DOWN
+		}
+
+		lockedInventories, err := s.inventoryRepo.SelectManyForUpdate(ctx, inventoryIDs, tx)
+		if err != nil {
+			log.Error("OrderService.Delete Error when lock inventories: " + err.Error())
+			return error_utils.ErrorCode.DB_DOWN
+		}
+
+		// Create inventory map for easy lookup
+		inventoryMap := make(map[int]*entity.Inventory)
+		for i := range lockedInventories {
+			inv := &lockedInventories[i]
+			inventoryMap[inv.ProductID] = inv
+		}
+
+		// Restore inventory quantities
+		for _, item := range inventoryItems {
+			inv := inventoryMap[item.ProductID]
+			if inv == nil {
+				log.Error("OrderService.Delete Error: inventory not found for productID ", item.ProductID)
+				return error_utils.ErrorCode.DB_DOWN
+			}
+
+			quantityToRestore := item.Quantity
+			newVersion := uuid.New().String()
+
+			// Update inventory quantity
+			err = s.inventoryRepo.UpdateQuantityWithVersionCommand(ctx, inv.ProductID, quantityToRestore, inv.Version, newVersion, tx)
+			if err != nil {
+				log.Error("OrderService.Delete Error when update inventory: " + err.Error())
+				return error_utils.ErrorCode.DB_DOWN
+			}
+
+			// Create inventory history record for restoration
+			inventoryHistory := &entity.InventoryHistory{
+				ProductID:     inv.ProductID,
+				Quantity:      quantityToRestore,
+				FinalQuantity: inv.Quantity + quantityToRestore,
+				ImporterName:  user.Username,
+				ImportedAt:    time.Now(),
+				Note:          "Hồi hàng về từ đơn xoá số " + strconv.Itoa(id),
+			}
+			err = s.inventoryHistoryRepo.CreateCommand(ctx, inventoryHistory, tx)
+			if err != nil {
+				log.Error("OrderService.Delete Error when create inventory history: " + err.Error())
+				return error_utils.ErrorCode.DB_DOWN
+			}
+
+			// Update local inventory state
+			inv.Quantity += quantityToRestore
+			inv.Version = newVersion
+		}
+
+		// Delete the order
+		err = s.orderRepo.DeleteByIDCommand(ctx, id, tx)
+		if err != nil {
+			log.Error("OrderService.Delete Error when delete order: " + err.Error())
+			return error_utils.ErrorCode.DB_DOWN
+		}
+
+		// Commit transaction
+		err = s.unitOfWork.Commit(tx)
+		if err != nil {
+			log.Error("OrderService.Delete Error when commit transaction: " + err.Error())
+			return error_utils.ErrorCode.DB_DOWN
+		}
+	} else {
+		// Delete the order
+		err = s.orderRepo.DeleteByIDCommand(ctx, id, nil)
+		if err != nil {
+			log.Error("OrderService.Delete Error when delete order: " + err.Error())
+			return error_utils.ErrorCode.DB_DOWN
+		}
+	}
+
+	return ""
+}

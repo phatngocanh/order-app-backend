@@ -134,3 +134,33 @@ func (h *OrderHandler) GetOne(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, httpcommon.NewSuccessResponse(&response))
 }
+
+// @Summary Delete Order
+// @Description Delete an order by its ID. If the order contains items exported from inventory, they will be restored to inventory.
+// @Tags Orders
+// @Produce json
+// @Param  Authorization header string true "Authorization: Bearer"
+// @Param orderId path int true "Order ID"
+// @Success 200 {object} httpcommon.HttpResponse[any]
+// @Failure 400 {object} httpcommon.HttpResponse[any]
+// @Failure 401 {object} httpcommon.HttpResponse[any]
+// @Failure 404 {object} httpcommon.HttpResponse[any]
+// @Failure 500 {object} httpcommon.HttpResponse[any]
+// @Router /orders/{orderId} [delete]
+func (h *OrderHandler) Delete(ctx *gin.Context) {
+	orderID, err := strconv.Atoi(ctx.Param("orderId"))
+	if err != nil {
+		statusCode, errResponse := error_utils.ErrorCodeToHttpResponse(error_utils.ErrorCode.BAD_REQUEST, "orderId")
+		ctx.JSON(statusCode, errResponse)
+		return
+	}
+
+	errCode := h.orderService.Delete(ctx, orderID)
+	if errCode != "" {
+		statusCode, errResponse := error_utils.ErrorCodeToHttpResponse(errCode, "")
+		ctx.JSON(statusCode, errResponse)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, httpcommon.NewSuccessResponse[any](nil))
+}

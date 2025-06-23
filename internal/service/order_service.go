@@ -12,4 +12,5 @@ type OrderService interface {
 	GetOne(ctx context.Context, id int) (model.GetOneOrderResponse, string)
 	Create(ctx *gin.Context, req model.CreateOrderRequest) string
 	Update(ctx context.Context, req model.UpdateOrderRequest) string
+	Delete(ctx *gin.Context, id int) string
 }

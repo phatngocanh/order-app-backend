@@ -84,3 +84,13 @@ func (repo *OrderRepository) UpdateCommand(ctx context.Context, order *entity.Or
 	_, err := repo.db.NamedExecContext(ctx, updateQuery, order)
 	return err
 }
+
+func (repo *OrderRepository) DeleteByIDCommand(ctx context.Context, id int, tx *sqlx.Tx) error {
+	deleteQuery := `DELETE FROM orders WHERE id = ?`
+	if tx != nil {
+		_, err := tx.ExecContext(ctx, deleteQuery, id)
+		return err
+	}
+	_, err := repo.db.ExecContext(ctx, deleteQuery, id)
+	return err
+}

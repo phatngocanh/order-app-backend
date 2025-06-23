@@ -55,3 +55,13 @@ func (repo *OrderItemRepository) CreateCommand(ctx context.Context, orderItem *e
 	orderItem.ID = int(lastID)
 	return nil
 }
+
+func (repo *OrderItemRepository) DeleteByIDCommand(ctx context.Context, id int, tx *sqlx.Tx) error {
+	deleteQuery := `DELETE FROM order_items WHERE id = ?`
+	if tx != nil {
+		_, err := tx.ExecContext(ctx, deleteQuery, id)
+		return err
+	}
+	_, err := repo.db.ExecContext(ctx, deleteQuery, id)
+	return err
+}

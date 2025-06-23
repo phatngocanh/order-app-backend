@@ -58,6 +58,7 @@ func MapRoutes(router *gin.Engine,
 			orders.PUT("/:orderId", authMiddleware.VerifyAccessToken, orderHandler.Update)
 			orders.GET("", authMiddleware.VerifyAccessToken, orderHandler.GetAll)
 			orders.GET("/:orderId", authMiddleware.VerifyAccessToken, orderHandler.GetOne)
+			orders.DELETE("/:orderId", authMiddleware.VerifyAccessToken, orderHandler.Delete)
 		}
 	}
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))

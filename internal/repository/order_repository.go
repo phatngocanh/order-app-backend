@@ -12,4 +12,5 @@ type OrderRepository interface {
 	GetOneByIDQuery(ctx context.Context, id int, tx *sqlx.Tx) (*entity.Order, error)
 	CreateCommand(ctx context.Context, order *entity.Order, tx *sqlx.Tx) error
 	UpdateCommand(ctx context.Context, order *entity.Order, tx *sqlx.Tx) error
+	DeleteByIDCommand(ctx context.Context, id int, tx *sqlx.Tx) error
 }
