@@ -73,9 +73,9 @@ func (repo *InventoryRepository) UpdateQuantityCommand(ctx context.Context, prod
 	return nil
 }
 
-func (repo *InventoryRepository) GetOneByProductIDForUpdateQuery(ctx context.Context, productID int, tx *sqlx.Tx) (*entity.Inventory, error) {
+func (repo *InventoryRepository) GetOneByIDForUpdateQuery(ctx context.Context, productID int, tx *sqlx.Tx) (*entity.Inventory, error) {
 	var inventory entity.Inventory
-	query := "SELECT * FROM inventory WHERE product_id = ? FOR UPDATE"
+	query := "SELECT * FROM inventory WHERE id = ? FOR UPDATE"
 	var err error
 
 	if tx != nil {

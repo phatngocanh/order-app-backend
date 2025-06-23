@@ -86,8 +86,17 @@ func (s *InventoryService) UpdateQuantity(ctx *gin.Context, productID int, reque
 		}
 	}()
 
+	toBeLockedInventory, err := s.inventoryRepository.GetOneByProductIDQuery(ctx, productID, tx)
+	if err != nil {
+		log.Error("InventoryService.UpdateQuantity Error when get inventory: " + err.Error())
+		return nil, error_utils.ErrorCode.DB_DOWN
+	}
+	if toBeLockedInventory == nil {
+		return nil, error_utils.ErrorCode.NOT_FOUND
+	}
+
 	// Get inventory with FOR UPDATE lock
-	existingInventory, err := s.inventoryRepository.GetOneByProductIDForUpdateQuery(ctx, productID, tx)
+	existingInventory, err := s.inventoryRepository.GetOneByIDForUpdateQuery(ctx, toBeLockedInventory.ID, tx)
 	if err != nil {
 		log.Error("InventoryService.UpdateQuantity Error when get inventory: " + err.Error())
 		return nil, error_utils.ErrorCode.DB_DOWN
