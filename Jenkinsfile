@@ -1,52 +1,38 @@
 pipeline {
     agent any
     environment {
-        PORT = credentials('BACKEND_PORT')
+        PORT = credentials('BACKEND_PORT_BICHNGOC')
         
         DB_HOST = credentials('DB_HOST')
         DB_PORT = credentials('DB_PORT')
-        DB_DATABASE = credentials('DB_DATABASE')
+        DB_DATABASE = credentials('DB_DATABASE_BICHNGOC')
         DB_USERNAME = credentials('DB_USERNAME')
         DB_PASSWORD = credentials('DB_PASSWORD') 
         DB_ROOT_PASSWORD = credentials('DB_ROOT_PASSWORD')
-        NOTIFICATION_ACCESS_TOKEN = credentials('NOTIFICATION_ACCESS_TOKEN')
 
         JWT_SECRET = credentials('JWT_SECRET') 
         ALLOWED_ORIGINS = credentials('ALLOWED_ORIGINS')
+
+        AWS_REGION = credentials('AWS_REGION')
+        AWS_ACCESS_KEY_ID = credentials('AWS_ACCESS_KEY_ID')
+        AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
+        AWS_S3_BUCKET = credentials('AWS_S3_BUCKET_BICHNGOC')
+        AWS_S3_ORDER_IMAGES_PREFIX = credentials('AWS_S3_ORDER_IMAGES_PREFIX_BICHNGOC')
+        
+        DOCKER_TAG = 'latest'
+        CONTAINER_NAME = 'order-app-be-container'
     }
 
     stages {
-        stage('Set Environment Tag') {
-            steps {
-                script {
-                    // Set dynamic values
-                    def dockerTag = 'main'
-                    def exposePort = env.PORT
-
-                    if (env.BRANCH_NAME == 'develop') {
-                        dockerTag = 'develop'
-                        exposePort = '6868'
-                        echo "Environment set to develop with tag 'develop' and EXPOSE_PORT 6868"
-                    } else {
-                        echo "Environment set to main with tag 'main'"
-                    }
-
-                    // Save to env so later stages can access
-                    env.DOCKER_TAG = dockerTag
-                    env.EXPOSE_PORT = exposePort
-                }
-            }
-        }
-
         stage('Remove Old Docker Image') {
             steps {
                 script {
-                    echo "Stopping and removing old Docker container for ${env.DOCKER_TAG}..."
-                    sh "docker stop travel-be-container-${env.DOCKER_TAG} || true"
-                    sh "docker rm travel-be-container-${env.DOCKER_TAG} || true"
+                    echo "Stopping and removing old Docker container..."
+                    sh "docker stop ${env.CONTAINER_NAME} || true"
+                    sh "docker rm ${env.CONTAINER_NAME} || true"
                     
-                    echo "Removing old Docker image for ${env.DOCKER_TAG}..."
-                    sh "docker rmi travel-be:${env.DOCKER_TAG} || true"
+                    echo "Removing old Docker image..."
+                    sh "docker rmi order-app-be:${env.DOCKER_TAG} || true"
                 }
             }
         }
@@ -54,7 +40,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    sh "docker build -t travel-be:${env.DOCKER_TAG} ."
+                    sh "docker build -t order-app-be:${env.DOCKER_TAG} ."
                 }
             }
         }
@@ -65,8 +51,8 @@ pipeline {
                     sh """
                         docker run -d \\
                             --restart unless-stopped \\
-                            --name travel-be-container-${env.DOCKER_TAG} \\
-                            -p ${env.EXPOSE_PORT}:${env.PORT} \\
+                            --name ${env.CONTAINER_NAME} \\
+                            -p ${env.PORT}:${env.PORT} \\
                             -e PORT="${env.PORT}" \\
                             -e DB_HOST="${env.DB_HOST}" \\
                             -e DB_PORT="${env.DB_PORT}" \\
@@ -74,23 +60,14 @@ pipeline {
                             -e DB_USERNAME="${env.DB_USERNAME}" \\
                             -e DB_PASSWORD="${env.DB_PASSWORD}" \\
                             -e DB_ROOT_PASSWORD="${env.DB_ROOT_PASSWORD}" \\
-                            -e MAIL_HOST="${env.MAIL_HOST}" \\
-                            -e MAIL_PORT="${env.MAIL_PORT}" \\
-                            -e MAIL_USERNAME="${env.MAIL_USERNAME}" \\
-                            -e MAIL_PASSWORD="${env.MAIL_PASSWORD}" \\
-                            -e MAIL_FROM="${env.MAIL_FROM}" \\
-                            -e MAIL_FROM_NAME="${env.MAIL_FROM_NAME}" \\
-                            -e REDIS_HOST="${env.REDIS_HOST}" \\
-                            -e REDIS_PORT="${env.REDIS_PORT}" \\
-                            -e REDIS_PASSWORD="${env.REDIS_PASSWORD}" \\
+                            -e AWS_REGION="${env.AWS_REGION}" \\
+                            -e AWS_ACCESS_KEY_ID="${env.AWS_ACCESS_KEY_ID}" \\
+                            -e AWS_SECRET_ACCESS_KEY="${env.AWS_SECRET_ACCESS_KEY}" \\
+                            -e AWS_S3_BUCKET="${env.AWS_S3_BUCKET}" \\
+                            -e AWS_S3_ORDER_IMAGES_PREFIX="${env.AWS_S3_ORDER_IMAGES_PREFIX}" \\
                             -e JWT_SECRET="${env.JWT_SECRET}" \\
                             -e ALLOWED_ORIGINS="${env.ALLOWED_ORIGINS}" \\
-                            -e GEN_TOKEN_URL="${env.GEN_TOKEN_URL}" \\
-                            -e CREATE_TOUR_URL="${env.CREATE_TOUR_URL}" \\
-                            -e CORE_SECRET_KEY="${env.CORE_SECRET_KEY}" \\
-                            -e PLACE_INFO_URL="${env.PLACE_INFO_URL}" \\
-                            -e NOTIFICATION_ACCESS_TOKEN="${env.NOTIFICATION_ACCESS_TOKEN}" \\
-                            travel-be:${env.DOCKER_TAG}
+                            order-app-be:${env.DOCKER_TAG}
                     """
                 }
             }
@@ -105,8 +82,8 @@ pipeline {
         failure {
             echo 'Pipeline failed'
             script {
-                sh "docker stop travel-be-container-${env.DOCKER_TAG} || true"
-                sh "docker rm travel-be-container-${env.DOCKER_TAG} || true"
+                sh "docker stop ${env.CONTAINER_NAME} || true"
+                sh "docker rm ${env.CONTAINER_NAME} || true"
                 cleanWs()
             }
         }
