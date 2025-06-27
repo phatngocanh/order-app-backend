@@ -91,6 +91,17 @@ func (s *OrderService) GetAll(ctx context.Context) (model.GetAllOrdersResponse, 
 		}
 		totalAmount, productCount := calculateOrderAmountsAndProductCount(orderItems)
 
+		// Calculate profit/loss: sum (selling_price - original_price) * quantity for all items
+		totalProfitLoss := 0
+		for _, item := range orderItems {
+			product, err := s.productRepo.GetOneByIDQuery(ctx, item.ProductID, nil)
+			if err != nil || product == nil {
+				continue
+			}
+			profitLoss := (item.SellingPrice - product.OriginalPrice) * item.Quantity
+			totalProfitLoss += profitLoss
+		}
+
 		resp.Orders = append(resp.Orders, model.OrderResponse{
 			ID:                   o.ID,
 			OrderDate:            o.OrderDate,
@@ -104,9 +115,10 @@ func (s *OrderService) GetAll(ctx context.Context) (model.GetAllOrdersResponse, 
 				Phone:   customer.Phone,
 				Address: customer.Address,
 			},
-			OrderItems:   nil, // Omit order items in GetAll
-			TotalAmount:  &totalAmount,
-			ProductCount: &productCount,
+			OrderItems:      nil, // Omit order items in GetAll
+			TotalAmount:     &totalAmount,
+			ProductCount:    &productCount,
+			TotalProfitLoss: &totalProfitLoss,
 		})
 	}
 	return resp, ""
@@ -135,13 +147,18 @@ func (s *OrderService) GetOne(ctx context.Context, id int) (model.GetOneOrderRes
 		log.Error("OrderService.GetOne Error fetching order items: " + err.Error())
 		return model.GetOneOrderResponse{}, error_utils.ErrorCode.DB_DOWN
 	}
+
 	orderItemResponses := make([]model.OrderItemResponse, 0, len(orderItems))
+	totalOriginalCost := 0
+	totalProfitLoss := 0
+
 	for _, item := range orderItems {
 		product, err := s.productRepo.GetOneByIDQuery(ctx, item.ProductID, nil)
 		if err != nil {
 			log.Error("OrderService.GetOne Error fetching product: " + err.Error())
 			return model.GetOneOrderResponse{}, error_utils.ErrorCode.DB_DOWN
 		}
+
 		finalAmount := item.FinalAmount
 		if finalAmount == nil {
 			itemTotal := item.Quantity * item.SellingPrice
@@ -149,6 +166,22 @@ func (s *OrderService) GetOne(ctx context.Context, id int) (model.GetOneOrderRes
 			calculated := itemTotal - discountAmount
 			finalAmount = &calculated
 		}
+
+		// Calculate profit/loss for this item
+		originalCost := item.Quantity * product.OriginalPrice
+		sellingRevenue := item.Quantity * item.SellingPrice
+		discountAmount := (sellingRevenue * item.Discount) / 100
+		finalRevenue := sellingRevenue - discountAmount
+		profitLoss := finalRevenue - originalCost
+		profitLossPercentage := 0.0
+		if originalCost > 0 {
+			profitLossPercentage = float64(profitLoss) / float64(originalCost) * 100
+		}
+
+		// Accumulate totals
+		totalOriginalCost += originalCost
+		totalProfitLoss += profitLoss
+
 		orderItemResponses = append(orderItemResponses, model.OrderItemResponse{
 			ID:            item.ID,
 			OrderID:       item.OrderID,
@@ -161,9 +194,20 @@ func (s *OrderService) GetOne(ctx context.Context, id int) (model.GetOneOrderRes
 			Discount:      item.Discount,
 			FinalAmount:   finalAmount,
 			ExportFrom:    item.ExportFrom,
+			// Profit/Loss fields
+			OriginalPrice:        &product.OriginalPrice,
+			ProfitLoss:           &profitLoss,
+			ProfitLossPercentage: &profitLossPercentage,
 		})
 	}
+
 	totalAmount, productCount := calculateOrderAmountsAndProductCount(orderItems)
+
+	// Calculate total profit/loss percentage
+	totalProfitLossPercentage := 0.0
+	if totalOriginalCost > 0 {
+		totalProfitLossPercentage = float64(totalProfitLoss) / float64(totalOriginalCost) * 100
+	}
 
 	resp := model.GetOneOrderResponse{Order: model.OrderResponse{
 		ID:                   order.ID,
@@ -181,6 +225,9 @@ func (s *OrderService) GetOne(ctx context.Context, id int) (model.GetOneOrderRes
 		OrderItems:   orderItemResponses,
 		TotalAmount:  &totalAmount,
 		ProductCount: &productCount,
+		// Profit/Loss fields for total order
+		TotalProfitLoss:           &totalProfitLoss,
+		TotalProfitLossPercentage: &totalProfitLossPercentage,
 	}}
 	return resp, ""
 }

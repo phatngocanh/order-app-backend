@@ -70,6 +70,9 @@ type OrderResponse struct {
 	OrderItems           []OrderItemResponse `json:"order_items,omitempty"`
 	TotalAmount          *int                `json:"total_amount,omitempty"`
 	ProductCount         *int                `json:"product_count,omitempty"`
+	// Profit/Loss fields for total order
+	TotalProfitLoss           *int     `json:"total_profit_loss,omitempty"`            // Total profit/loss for the order
+	TotalProfitLossPercentage *float64 `json:"total_profit_loss_percentage,omitempty"` // Total profit/loss percentage for the order
 }
 
 type OrderItemResponse struct {
@@ -84,6 +87,10 @@ type OrderItemResponse struct {
 	Discount      int    `json:"discount"`
 	FinalAmount   *int   `json:"final_amount"`
 	ExportFrom    string `json:"export_from"`
+	// Profit/Loss fields
+	OriginalPrice        *int     `json:"original_price,omitempty"`         // Product's original price
+	ProfitLoss           *int     `json:"profit_loss,omitempty"`            // Profit/Loss amount for this item
+	ProfitLossPercentage *float64 `json:"profit_loss_percentage,omitempty"` // Profit/Loss percentage for this item
 }
 
 type GetAllOrdersResponse struct {
