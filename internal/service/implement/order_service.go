@@ -254,36 +254,59 @@ func (s *OrderService) Create(ctx *gin.Context, req model.CreateOrderRequest) st
 		return error_utils.ErrorCode.DB_DOWN
 	}
 
+	// Validate that each product has at most 2 order items (1 from inventory, 1 from external)
+	productOrderItemCount := make(map[int]map[string]int) // productID -> exportFrom -> count
+	for _, item := range req.OrderItems {
+		if productOrderItemCount[item.ProductID] == nil {
+			productOrderItemCount[item.ProductID] = make(map[string]int)
+		}
+		productOrderItemCount[item.ProductID][item.ExportFrom]++
+
+		if productOrderItemCount[item.ProductID][item.ExportFrom] > 1 {
+			log.Error("OrderService.Create Error: product ", item.ProductID, " has more than 1 order item from ", item.ExportFrom)
+			return error_utils.ErrorCode.DUPLICATE_ORDER_ITEMS
+		}
+	}
+
 	for _, item := range req.OrderItems {
 		inv := inventoryMap[item.ProductID]
 		quantityToExport := item.Quantity
-		itemVersion := item.Version
-		originalInventoryQuantity := inv.Quantity // Store original inventory quantity
 
-		if inv.Version != itemVersion {
-			log.Error("OrderService.Create Error: inventory version mismatch for productID ", item.ProductID)
-			return error_utils.ErrorCode.INVENTORY_VERSION_MISMATCH
+		// Only check version for inventory items
+		if item.ExportFrom == entity.OrderExportFrom.INVENTORY {
+			itemVersion := item.Version
+			if inv.Version != itemVersion {
+				log.Error("OrderService.Create Error: inventory version mismatch for productID ", item.ProductID)
+				return error_utils.ErrorCode.INVENTORY_VERSION_MISMATCH
+			}
 		}
 
-		// Case 1: Order quantity <= inventory quantity
-		if inv.Quantity >= quantityToExport {
-			// Calculate final amount for inventory item
-			itemTotal := quantityToExport * item.SellingPrice
-			discountAmount := (itemTotal * item.Discount) / 100
-			finalAmount := itemTotal - discountAmount
+		// Calculate final amount for the item
+		itemTotal := quantityToExport * item.SellingPrice
+		discountAmount := (itemTotal * item.Discount) / 100
+		finalAmount := itemTotal - discountAmount
 
-			itemEntity := entity.OrderItem{
-				ProductID:     item.ProductID,
-				NumberOfBoxes: item.NumberOfBoxes,
-				Spec:          item.Spec,
-				Quantity:      quantityToExport,
-				SellingPrice:  item.SellingPrice,
-				Discount:      item.Discount,
-				FinalAmount:   &finalAmount,
-				OrderID:       orderEntity.ID,
-				ExportFrom:    entity.OrderExportFrom.INVENTORY,
+		itemEntity := entity.OrderItem{
+			ProductID:     item.ProductID,
+			NumberOfBoxes: item.NumberOfBoxes,
+			Spec:          item.Spec,
+			Quantity:      quantityToExport,
+			SellingPrice:  item.SellingPrice,
+			Discount:      item.Discount,
+			FinalAmount:   &finalAmount,
+			OrderID:       orderEntity.ID,
+			ExportFrom:    item.ExportFrom,
+		}
+
+		// Handle based on export source
+		if item.ExportFrom == entity.OrderExportFrom.INVENTORY {
+			// Check if inventory has enough quantity
+			if inv.Quantity < quantityToExport {
+				log.Error("OrderService.Create Error: inventory quantity exceeded for productID ", item.ProductID)
+				return error_utils.ErrorCode.INVENTORY_QUANTITY_EXCEEDED
 			}
 
+			// Update inventory quantity
 			newVersion := uuid.New().String()
 			err = s.inventoryRepo.UpdateQuantityWithVersionCommand(ctx, inv.ProductID, -quantityToExport, inv.Version, newVersion, tx)
 			if err != nil {
@@ -312,101 +335,21 @@ func (s *OrderService) Create(ctx *gin.Context, req model.CreateOrderRequest) st
 				return error_utils.ErrorCode.DB_DOWN
 			}
 
-			err = s.orderItemRepo.CreateCommand(ctx, &itemEntity, tx)
-			if err != nil {
-				log.Error("OrderService.Create Error when create order item: " + err.Error())
-				return error_utils.ErrorCode.DB_DOWN
-			}
-
+			// Update local inventory state
 			inv.Quantity -= quantityToExport
 			inv.Version = newVersion
-		} else {
-			// Case 2: Order quantity > inventory quantity
+		} else if item.ExportFrom != entity.OrderExportFrom.EXTERNAL {
+			// Invalid export source
+			log.Error("OrderService.Create Error: invalid export_from value for productID ", item.ProductID)
+			return error_utils.ErrorCode.BAD_REQUEST
+		}
+		// For EXTERNAL source, no inventory operations are needed - items will be sourced from external suppliers
 
-			// Create order item from inventory (if inventory has stock)
-			if inv.Quantity > 0 {
-				// Calculate final amount for inventory item
-				inventoryItemTotal := inv.Quantity * item.SellingPrice
-				inventoryDiscountAmount := (inventoryItemTotal * item.Discount) / 100
-				inventoryFinalAmount := inventoryItemTotal - inventoryDiscountAmount
-
-				inventoryItemEntity := entity.OrderItem{
-					ProductID:     item.ProductID,
-					NumberOfBoxes: item.NumberOfBoxes,
-					Spec:          item.Spec,
-					Quantity:      inv.Quantity,
-					SellingPrice:  item.SellingPrice,
-					Discount:      item.Discount,
-					FinalAmount:   &inventoryFinalAmount,
-					OrderID:       orderEntity.ID,
-					ExportFrom:    entity.OrderExportFrom.INVENTORY,
-				}
-
-				newVersion := uuid.New().String()
-				err = s.inventoryRepo.UpdateQuantityWithVersionCommand(ctx, inv.ProductID, -inv.Quantity, inv.Version, newVersion, tx)
-				if err != nil {
-					var constraintViolationError *error_utils.ConstraintViolationError
-					if errors.As(err, &constraintViolationError) {
-						log.Error("OrderService.Create Error: inventory quantity negative for productID ", item.ProductID)
-						return error_utils.ErrorCode.INVENTORY_QUANTITY_NEGATIVE
-					}
-					log.Error("OrderService.Create Error when update inventory: " + err.Error())
-					return error_utils.ErrorCode.DB_DOWN
-				}
-
-				// Create inventory history record for inventory export
-				inventoryHistory := &entity.InventoryHistory{
-					ProductID:     inv.ProductID,
-					Quantity:      -inv.Quantity,
-					FinalQuantity: 0,
-					ImporterName:  user.Username,
-					ImportedAt:    time.Now(),
-					Note:          "Hàng trừ cho hoá đơn ID: " + strconv.Itoa(orderEntity.ID),
-					ReferenceID:   &orderEntity.ID,
-				}
-				err = s.inventoryHistoryRepo.CreateCommand(ctx, inventoryHistory, tx)
-				if err != nil {
-					log.Error("OrderService.Create Error when create inventory history: " + err.Error())
-					return error_utils.ErrorCode.DB_DOWN
-				}
-
-				err = s.orderItemRepo.CreateCommand(ctx, &inventoryItemEntity, tx)
-				if err != nil {
-					log.Error("OrderService.Create Error when create inventory order item: " + err.Error())
-					return error_utils.ErrorCode.DB_DOWN
-				}
-
-				inv.Quantity = 0
-				inv.Version = newVersion
-			}
-
-			// Create order item from external for remaining quantity
-			// Use original inventory quantity to calculate remaining quantity
-			remainingQuantity := quantityToExport - originalInventoryQuantity
-			if remainingQuantity > 0 {
-				// Calculate final amount for external item
-				externalItemTotal := remainingQuantity * item.SellingPrice
-				externalDiscountAmount := (externalItemTotal * item.Discount) / 100
-				externalFinalAmount := externalItemTotal - externalDiscountAmount
-
-				externalItemEntity := entity.OrderItem{
-					ProductID:     item.ProductID,
-					NumberOfBoxes: item.NumberOfBoxes,
-					Spec:          item.Spec,
-					Quantity:      remainingQuantity,
-					SellingPrice:  item.SellingPrice,
-					Discount:      item.Discount,
-					FinalAmount:   &externalFinalAmount,
-					OrderID:       orderEntity.ID,
-					ExportFrom:    entity.OrderExportFrom.EXTERNAL,
-				}
-
-				err = s.orderItemRepo.CreateCommand(ctx, &externalItemEntity, tx)
-				if err != nil {
-					log.Error("OrderService.Create Error when create external order item: " + err.Error())
-					return error_utils.ErrorCode.DB_DOWN
-				}
-			}
+		// Create order item
+		err = s.orderItemRepo.CreateCommand(ctx, &itemEntity, tx)
+		if err != nil {
+			log.Error("OrderService.Create Error when create order item: " + err.Error())
+			return error_utils.ErrorCode.DB_DOWN
 		}
 	}
 

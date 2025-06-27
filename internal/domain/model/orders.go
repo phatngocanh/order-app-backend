@@ -56,6 +56,7 @@ type OrderItemRequest struct {
 	Discount      int    `json:"discount"`                         // Chiết khấu (%)
 	FinalAmount   *int   `json:"final_amount"`                     // Số tiền cuối cùng sau khi trừ chiết khấu (VND)
 	Version       string `json:"version" binding:"required"`       // Version (UUID) của inventory để kiểm tra optimistic lock
+	ExportFrom    string `json:"export_from" binding:"required"`   // Nguồn xuất: INVENTORY hoặc EXTERNAL
 }
 
 type OrderResponse struct {

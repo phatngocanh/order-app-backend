@@ -36,6 +36,20 @@ func ErrorCodeToHttpResponse(errCode string, field string) (statusCode int, http
 			Field:   field,
 			Code:    ErrorCode.INVENTORY_QUANTITY_NEGATIVE,
 		})
+	case ErrorCode.INVENTORY_QUANTITY_EXCEEDED:
+		statusCode = http.StatusBadRequest
+		httpErrResponse = httpcommon.NewErrorResponse(httpcommon.Error{
+			Message: "Order quantity exceeds available inventory",
+			Field:   field,
+			Code:    ErrorCode.INVENTORY_QUANTITY_EXCEEDED,
+		})
+	case ErrorCode.DUPLICATE_ORDER_ITEMS:
+		statusCode = http.StatusBadRequest
+		httpErrResponse = httpcommon.NewErrorResponse(httpcommon.Error{
+			Message: "Each product can have at most one order item from inventory and one from external",
+			Field:   field,
+			Code:    ErrorCode.DUPLICATE_ORDER_ITEMS,
+		})
 	case ErrorCode.FORBIDDEN:
 		statusCode = http.StatusForbidden
 		httpErrResponse = httpcommon.NewErrorResponse(httpcommon.Error{
