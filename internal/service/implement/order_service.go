@@ -68,6 +68,37 @@ func calculateOrderAmountsAndProductCount(orderItems []entity.OrderItem) (totalA
 	return
 }
 
+// Helper to calculate total original cost and total sales revenue for order items
+func (s *OrderService) calculateOrderCostAndRevenue(ctx context.Context, orderItems []model.OrderItemRequest) (totalOriginalCost int, totalSalesRevenue int, err string) {
+	totalOriginalCost = 0
+	totalSalesRevenue = 0
+
+	for _, item := range orderItems {
+		// Get product to get original price
+		product, err := s.productRepo.GetOneByIDQuery(ctx, item.ProductID, nil)
+		if err != nil {
+			log.Error("OrderService.calculateOrderCostAndRevenue Error fetching product: " + err.Error())
+			return 0, 0, error_utils.ErrorCode.DB_DOWN
+		}
+		if product == nil {
+			log.Error("OrderService.calculateOrderCostAndRevenue Error: product not found for ID: ", item.ProductID)
+			return 0, 0, error_utils.ErrorCode.NOT_FOUND
+		}
+
+		// Calculate original cost
+		originalCost := item.Quantity * product.OriginalPrice
+		totalOriginalCost += originalCost
+
+		// Calculate final revenue (after discount)
+		sellingRevenue := item.Quantity * item.SellingPrice
+		discountAmount := (sellingRevenue * item.Discount) / 100
+		finalRevenue := sellingRevenue - discountAmount
+		totalSalesRevenue += finalRevenue
+	}
+
+	return totalOriginalCost, totalSalesRevenue, ""
+}
+
 func (s *OrderService) GetAll(ctx context.Context) (model.GetAllOrdersResponse, string) {
 	orders, err := s.orderRepo.GetAllQuery(ctx, nil)
 	if err != nil {
@@ -91,15 +122,11 @@ func (s *OrderService) GetAll(ctx context.Context) (model.GetAllOrdersResponse, 
 		}
 		totalAmount, productCount := calculateOrderAmountsAndProductCount(orderItems)
 
-		// Calculate profit/loss: sum (selling_price - original_price) * quantity for all items
-		totalProfitLoss := 0
-		for _, item := range orderItems {
-			product, err := s.productRepo.GetOneByIDQuery(ctx, item.ProductID, nil)
-			if err != nil || product == nil {
-				continue
-			}
-			profitLoss := (item.SellingPrice - product.OriginalPrice) * item.Quantity
-			totalProfitLoss += profitLoss
+		// Calculate profit/loss from stored cost and revenue values
+		totalProfitLoss := o.TotalSalesRevenue - o.TotalOriginalCost
+		totalProfitLossPercentage := 0.0
+		if o.TotalOriginalCost > 0 {
+			totalProfitLossPercentage = float64(totalProfitLoss) / float64(o.TotalOriginalCost) * 100
 		}
 
 		resp.Orders = append(resp.Orders, model.OrderResponse{
@@ -115,10 +142,11 @@ func (s *OrderService) GetAll(ctx context.Context) (model.GetAllOrdersResponse, 
 				Phone:   customer.Phone,
 				Address: customer.Address,
 			},
-			OrderItems:      nil, // Omit order items in GetAll
-			TotalAmount:     &totalAmount,
-			ProductCount:    &productCount,
-			TotalProfitLoss: &totalProfitLoss,
+			OrderItems:                nil, // Omit order items in GetAll
+			TotalAmount:               &totalAmount,
+			ProductCount:              &productCount,
+			TotalProfitLoss:           &totalProfitLoss,
+			TotalProfitLossPercentage: &totalProfitLossPercentage,
 		})
 	}
 	return resp, ""
@@ -203,10 +231,11 @@ func (s *OrderService) GetOne(ctx context.Context, id int) (model.GetOneOrderRes
 
 	totalAmount, productCount := calculateOrderAmountsAndProductCount(orderItems)
 
-	// Calculate total profit/loss percentage
+	// Use stored values for total order profit/loss
+	totalProfitLoss = order.TotalSalesRevenue - order.TotalOriginalCost
 	totalProfitLossPercentage := 0.0
-	if totalOriginalCost > 0 {
-		totalProfitLossPercentage = float64(totalProfitLoss) / float64(totalOriginalCost) * 100
+	if order.TotalOriginalCost > 0 {
+		totalProfitLossPercentage = float64(totalProfitLoss) / float64(order.TotalOriginalCost) * 100
 	}
 
 	resp := model.GetOneOrderResponse{Order: model.OrderResponse{
@@ -285,12 +314,20 @@ func (s *OrderService) Create(ctx *gin.Context, req model.CreateOrderRequest) st
 		inventoryMap[inv.ProductID] = inv
 	}
 
+	// Calculate total original cost and total sales revenue
+	totalOriginalCost, totalSalesRevenue, errCode := s.calculateOrderCostAndRevenue(ctx, req.OrderItems)
+	if errCode != "" {
+		return errCode
+	}
+
 	orderEntity := entity.Order{
-		CustomerID:     req.CustomerID,
-		OrderDate:      req.OrderDate,
-		DeliveryStatus: req.DeliveryStatus,
-		DebtStatus:     req.DebtStatus,
-		ShippingFee:    req.ShippingFee,
+		CustomerID:        req.CustomerID,
+		OrderDate:         req.OrderDate,
+		DeliveryStatus:    req.DeliveryStatus,
+		DebtStatus:        req.DebtStatus,
+		ShippingFee:       req.ShippingFee,
+		TotalOriginalCost: totalOriginalCost,
+		TotalSalesRevenue: totalSalesRevenue,
 	}
 	now := time.Now()
 	orderEntity.StatusTransitionedAt = &now
