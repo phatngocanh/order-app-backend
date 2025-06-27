@@ -56,7 +56,7 @@ func (repo *OrderRepository) GetOneByIDQuery(ctx context.Context, id int, tx *sq
 }
 
 func (repo *OrderRepository) CreateCommand(ctx context.Context, order *entity.Order, tx *sqlx.Tx) error {
-	insertQuery := `INSERT INTO orders(customer_id, order_date, delivery_status, debt_status, status_transitioned_at) VALUES (:customer_id, :order_date, :delivery_status, :debt_status, :status_transitioned_at)`
+	insertQuery := `INSERT INTO orders(customer_id, order_date, delivery_status, debt_status, status_transitioned_at, shipping_fee) VALUES (:customer_id, :order_date, :delivery_status, :debt_status, :status_transitioned_at, :shipping_fee)`
 	var result sql.Result
 	var err error
 	if tx != nil {
@@ -76,7 +76,7 @@ func (repo *OrderRepository) CreateCommand(ctx context.Context, order *entity.Or
 }
 
 func (repo *OrderRepository) UpdateCommand(ctx context.Context, order *entity.Order, tx *sqlx.Tx) error {
-	updateQuery := `UPDATE orders SET customer_id = :customer_id, order_date = :order_date, delivery_status = :delivery_status, debt_status = :debt_status, status_transitioned_at = :status_transitioned_at WHERE id = :id`
+	updateQuery := `UPDATE orders SET customer_id = :customer_id, order_date = :order_date, delivery_status = :delivery_status, debt_status = :debt_status, status_transitioned_at = :status_transitioned_at, shipping_fee = :shipping_fee WHERE id = :id`
 	if tx != nil {
 		_, err := tx.NamedExecContext(ctx, updateQuery, order)
 		return err

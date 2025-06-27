@@ -97,6 +97,7 @@ func (s *OrderService) GetAll(ctx context.Context) (model.GetAllOrdersResponse, 
 			DeliveryStatus:       o.DeliveryStatus,
 			DebtStatus:           o.DebtStatus,
 			StatusTransitionedAt: o.StatusTransitionedAt,
+			ShippingFee:          o.ShippingFee,
 			Customer: model.CustomerResponse{
 				ID:      customer.ID,
 				Name:    customer.Name,
@@ -170,6 +171,7 @@ func (s *OrderService) GetOne(ctx context.Context, id int) (model.GetOneOrderRes
 		DeliveryStatus:       order.DeliveryStatus,
 		DebtStatus:           order.DebtStatus,
 		StatusTransitionedAt: order.StatusTransitionedAt,
+		ShippingFee:          order.ShippingFee,
 		Customer: model.CustomerResponse{
 			ID:      customer.ID,
 			Name:    customer.Name,
@@ -177,7 +179,7 @@ func (s *OrderService) GetOne(ctx context.Context, id int) (model.GetOneOrderRes
 			Address: customer.Address,
 		},
 		OrderItems:   orderItemResponses,
-		TotalAmount:  &totalAmount, // Not needed in GetOne
+		TotalAmount:  &totalAmount,
 		ProductCount: &productCount,
 	}}
 	return resp, ""
@@ -241,6 +243,7 @@ func (s *OrderService) Create(ctx *gin.Context, req model.CreateOrderRequest) st
 		OrderDate:      req.OrderDate,
 		DeliveryStatus: req.DeliveryStatus,
 		DebtStatus:     req.DebtStatus,
+		ShippingFee:    req.ShippingFee,
 	}
 	now := time.Now()
 	orderEntity.StatusTransitionedAt = &now
@@ -264,14 +267,10 @@ func (s *OrderService) Create(ctx *gin.Context, req model.CreateOrderRequest) st
 
 		// Case 1: Order quantity <= inventory quantity
 		if inv.Quantity >= quantityToExport {
-			log.Infof("OrderService.Create: ProductID %d - Order quantity %d <= Inventory quantity %d, creating single inventory item", item.ProductID, quantityToExport, inv.Quantity)
-
 			// Calculate final amount for inventory item
 			itemTotal := quantityToExport * item.SellingPrice
 			discountAmount := (itemTotal * item.Discount) / 100
 			finalAmount := itemTotal - discountAmount
-
-			log.Infof("OrderService.Create: Creating inventory item - Quantity: %d, FinalAmount: %d", quantityToExport, finalAmount)
 
 			itemEntity := entity.OrderItem{
 				ProductID:     item.ProductID,
@@ -323,7 +322,6 @@ func (s *OrderService) Create(ctx *gin.Context, req model.CreateOrderRequest) st
 			inv.Version = newVersion
 		} else {
 			// Case 2: Order quantity > inventory quantity
-			log.Infof("OrderService.Create: ProductID %d - Order quantity %d > Inventory quantity %d, creating split items", item.ProductID, quantityToExport, originalInventoryQuantity)
 
 			// Create order item from inventory (if inventory has stock)
 			if inv.Quantity > 0 {
@@ -331,8 +329,6 @@ func (s *OrderService) Create(ctx *gin.Context, req model.CreateOrderRequest) st
 				inventoryItemTotal := inv.Quantity * item.SellingPrice
 				inventoryDiscountAmount := (inventoryItemTotal * item.Discount) / 100
 				inventoryFinalAmount := inventoryItemTotal - inventoryDiscountAmount
-
-				log.Infof("OrderService.Create: Creating inventory item - Quantity: %d, FinalAmount: %d", inv.Quantity, inventoryFinalAmount)
 
 				inventoryItemEntity := entity.OrderItem{
 					ProductID:     item.ProductID,
@@ -393,8 +389,6 @@ func (s *OrderService) Create(ctx *gin.Context, req model.CreateOrderRequest) st
 				externalDiscountAmount := (externalItemTotal * item.Discount) / 100
 				externalFinalAmount := externalItemTotal - externalDiscountAmount
 
-				log.Infof("OrderService.Create: Creating external item - Quantity: %d, FinalAmount: %d", remainingQuantity, externalFinalAmount)
-
 				externalItemEntity := entity.OrderItem{
 					ProductID:     item.ProductID,
 					NumberOfBoxes: item.NumberOfBoxes,
@@ -449,6 +443,8 @@ func (s *OrderService) Update(ctx context.Context, req model.UpdateOrderRequest)
 	if req.DebtStatus != "" {
 		existing.DebtStatus = req.DebtStatus
 	}
+	// Update shipping fee if provided
+	existing.ShippingFee = req.ShippingFee
 
 	err = s.orderRepo.UpdateCommand(ctx, existing, nil)
 	if err != nil {

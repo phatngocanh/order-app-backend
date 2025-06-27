@@ -9,6 +9,7 @@ type Order struct {
 	DeliveryStatus       string     `db:"delivery_status"`
 	DebtStatus           string     `db:"debt_status"`
 	StatusTransitionedAt *time.Time `db:"status_transitioned_at"`
+	ShippingFee          int        `db:"shipping_fee"`
 }
 
 type orderDeliveryStatus struct {
