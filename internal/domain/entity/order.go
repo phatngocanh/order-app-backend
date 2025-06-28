@@ -9,7 +9,6 @@ type Order struct {
 	DeliveryStatus       string     `db:"delivery_status"`
 	DebtStatus           string     `db:"debt_status"`
 	StatusTransitionedAt *time.Time `db:"status_transitioned_at"`
-	ShippingFee          int        `db:"shipping_fee"`
 	TotalOriginalCost    int        `db:"total_original_cost"`
 	TotalSalesRevenue    int        `db:"total_sales_revenue"`
 	AdditionalCost       int        `db:"additional_cost"`

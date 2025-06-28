@@ -143,7 +143,6 @@ func (s *OrderService) GetAll(ctx context.Context, userID int, customerID int, d
 			DeliveryStatus:       o.DeliveryStatus,
 			DebtStatus:           o.DebtStatus,
 			StatusTransitionedAt: o.StatusTransitionedAt,
-			ShippingFee:          o.ShippingFee,
 			AdditionalCost:       o.AdditionalCost,
 			AdditionalCostNote:   o.AdditionalCostNote,
 			Customer: model.CustomerResponse{
@@ -283,7 +282,6 @@ func (s *OrderService) GetOne(ctx context.Context, id int) (model.GetOneOrderRes
 		DeliveryStatus:       order.DeliveryStatus,
 		DebtStatus:           order.DebtStatus,
 		StatusTransitionedAt: order.StatusTransitionedAt,
-		ShippingFee:          order.ShippingFee,
 		AdditionalCost:       order.AdditionalCost,
 		AdditionalCostNote:   order.AdditionalCostNote,
 		Customer: model.CustomerResponse{
@@ -367,7 +365,6 @@ func (s *OrderService) Create(ctx *gin.Context, req model.CreateOrderRequest) st
 		OrderDate:          req.OrderDate,
 		DeliveryStatus:     req.DeliveryStatus,
 		DebtStatus:         req.DebtStatus,
-		ShippingFee:        req.ShippingFee,
 		TotalOriginalCost:  totalOriginalCost,
 		TotalSalesRevenue:  totalSalesRevenue,
 		AdditionalCost:     req.AdditionalCost,

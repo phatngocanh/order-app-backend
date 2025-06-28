@@ -9,7 +9,6 @@ type Order struct {
 	DeliveryStatus       string      `json:"delivery_status"`
 	DebtStatus           string      `json:"debt_status"`
 	StatusTransitionedAt *time.Time  `json:"status_transitioned_at"`
-	ShippingFee          int         `json:"shipping_fee"`
 	OrderItems           []OrderItem `json:"order_items,omitempty"`
 }
 
@@ -33,7 +32,6 @@ type CreateOrderRequest struct {
 	DeliveryStatus       string             `json:"delivery_status" binding:"required"`  // Trạng thái giao hàng
 	DebtStatus           string             `json:"debt_status"`                         // Trạng thái công nợ
 	StatusTransitionedAt *time.Time         `json:"status_transitioned_at"`              // Ngày chuyển trạng thái
-	ShippingFee          int                `json:"shipping_fee"`                        // Phí vận chuyển (VND)
 	AdditionalCost       int                `json:"additional_cost"`                     // Chi phí phát sinh thêm (VND)
 	AdditionalCostNote   *string            `json:"additional_cost_note"`                // Ghi chú cho chi phí phát sinh
 	OrderItems           []OrderItemRequest `json:"order_items" binding:"required,dive"` // Danh sách sản phẩm trong đơn
@@ -46,7 +44,6 @@ type UpdateOrderRequest struct {
 	DeliveryStatus       string     `json:"delivery_status"`        // Trạng thái giao hàng
 	DebtStatus           string     `json:"debt_status"`            // Trạng thái công nợ
 	StatusTransitionedAt *time.Time `json:"status_transitioned_at"` // Ngày chuyển trạng thái
-	ShippingFee          int        `json:"shipping_fee"`           // Phí vận chuyển (VND)
 	AdditionalCost       int        `json:"additional_cost"`        // Chi phí phát sinh thêm (VND)
 	AdditionalCostNote   *string    `json:"additional_cost_note"`   // Ghi chú cho chi phí phát sinh
 }
@@ -69,7 +66,6 @@ type OrderResponse struct {
 	DeliveryStatus       string              `json:"delivery_status"`
 	DebtStatus           string              `json:"debt_status"`
 	StatusTransitionedAt *time.Time          `json:"status_transitioned_at"`
-	ShippingFee          int                 `json:"shipping_fee"`
 	AdditionalCost       int                 `json:"additional_cost"`
 	AdditionalCostNote   *string             `json:"additional_cost_note"`
 	Customer             CustomerResponse    `json:"customer"`
