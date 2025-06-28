@@ -12,11 +12,8 @@ type UploadOrderImageResponse struct {
 	OrderImage OrderImage `json:"orderImage"`
 }
 
-type GetOrderImagesResponse struct {
-	OrderImages []OrderImage `json:"orderImages"`
-}
-
 type GenerateSignedUploadURLResponse struct {
 	SignedURL string `json:"signed_url"`
 	S3Key     string `json:"s3_key"`
+	ImageID   int    `json:"image_id"`
 }

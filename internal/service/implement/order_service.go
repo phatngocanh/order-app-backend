@@ -261,7 +261,7 @@ func (s *OrderService) GetOne(ctx context.Context, id int) (model.GetOneOrderRes
 	if len(orderImages) > 0 {
 		for _, img := range orderImages {
 			// Generate a fresh signed URL for each image
-			signedURL, err := s.s3Service.GenerateSignedDownloadURL(ctx, img.S3Key, 1*time.Hour)
+			signedURL, err := s.s3Service.GenerateSignedDownloadURL(ctx, img.S3Key, 20*time.Second)
 			if err != nil {
 				log.Error("OrderService.GetOne Error generating signed URL for image: " + err.Error())
 				// Continue with other images even if one fails

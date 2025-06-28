@@ -124,7 +124,7 @@ func (s *S3Service) GenerateSignedUploadURL(ctx context.Context, fileName string
 		Bucket:      aws.String(s.bucketName),
 		Key:         aws.String(key),
 		ContentType: aws.String(contentType),
-	}, s3.WithPresignExpires(2*time.Minute)) // URL expires in 15 minutes
+	}, s3.WithPresignExpires(2*time.Minute)) // URL expires in 2 minutes
 
 	if err != nil {
 		return "", "", fmt.Errorf("failed to generate presigned upload URL: %w", err)

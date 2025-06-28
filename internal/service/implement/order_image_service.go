@@ -1,10 +1,6 @@
 package serviceimplement
 
 import (
-	"context"
-	"io"
-	"time"
-
 	"github.com/gin-gonic/gin"
 	"github.com/pna/order-app-backend/internal/bean"
 	"github.com/pna/order-app-backend/internal/domain/entity"
@@ -27,85 +23,6 @@ func NewOrderImageService(
 	return &OrderImageService{
 		orderImageRepo: orderImageRepo,
 		s3Service:      s3Service,
-	}
-}
-
-func (s *OrderImageService) UploadImage(ctx *gin.Context, orderID int, file io.Reader, fileName string) (model.UploadOrderImageResponse, string) {
-	// Upload image to S3 and get the S3 key
-	s3Key, err := s.s3Service.UploadImage(ctx, file, fileName)
-	if err != nil {
-		log.Error("OrderImageService.UploadImage Error uploading to S3: " + err.Error())
-		return model.UploadOrderImageResponse{}, error_utils.ErrorCode.INTERNAL_SERVER_ERROR
-	}
-
-	// Generate a signed URL for immediate access
-	signedURL, err := s.s3Service.GenerateSignedDownloadURL(ctx, s3Key, 5*time.Minute)
-	if err != nil {
-		log.Error("OrderImageService.UploadImage Error generating signed URL: " + err.Error())
-		return model.UploadOrderImageResponse{}, error_utils.ErrorCode.INTERNAL_SERVER_ERROR
-	}
-
-	// Create order image entity
-	orderImage := &entity.OrderImage{
-		OrderID:  orderID,
-		ImageURL: signedURL, // Store signed URL temporarily
-		S3Key:    s3Key,     // Store S3 key for future signed URL generation
-	}
-
-	// Save to database
-	err = s.orderImageRepo.CreateCommand(ctx, orderImage, nil)
-	if err != nil {
-		log.Error("OrderImageService.UploadImage Error saving to database: " + err.Error())
-		return model.UploadOrderImageResponse{}, error_utils.ErrorCode.DB_DOWN
-	}
-
-	// Convert to response model
-	response := model.UploadOrderImageResponse{
-		OrderImage: model.OrderImage{
-			ID:       orderImage.ID,
-			OrderID:  orderImage.OrderID,
-			ImageURL: orderImage.ImageURL,
-			S3Key:    orderImage.S3Key,
-		},
-	}
-
-	return response, ""
-}
-
-func (s *OrderImageService) GetImagesByOrderID(ctx context.Context, orderID int) (model.GetOrderImagesResponse, string) {
-	// Get images from database
-	orderImages, err := s.orderImageRepo.GetAllByOrderIDQuery(ctx, orderID, nil)
-	if err != nil {
-		log.Error("OrderImageService.GetImagesByOrderID Error: " + err.Error())
-		return model.GetOrderImagesResponse{}, error_utils.ErrorCode.DB_DOWN
-	}
-
-	// Convert to response model and generate fresh signed URLs
-	var responseImages []model.OrderImage
-	if len(orderImages) > 0 {
-		for _, img := range orderImages {
-			// Generate a fresh signed URL for each image
-			signedURL, err := s.s3Service.GenerateSignedDownloadURL(ctx, img.S3Key, 1*time.Hour)
-			if err != nil {
-				log.Error("OrderImageService.GetImagesByOrderID Error generating signed URL: " + err.Error())
-				// Continue with other images even if one fails
-				signedURL = ""
-			}
-
-			responseImages = append(responseImages, model.OrderImage{
-				ID:       img.ID,
-				OrderID:  img.OrderID,
-				ImageURL: signedURL,
-				S3Key:    img.S3Key,
-			})
-		}
-		return model.GetOrderImagesResponse{
-			OrderImages: responseImages,
-		}, ""
-	} else {
-		return model.GetOrderImagesResponse{
-			OrderImages: make([]model.OrderImage, 0),
-		}, ""
 	}
 }
 
@@ -162,6 +79,7 @@ func (s *OrderImageService) GenerateSignedUploadURL(ctx *gin.Context, orderID in
 	response := model.GenerateSignedUploadURLResponse{
 		SignedURL: signedURL,
 		S3Key:     s3Key,
+		ImageID:   orderImage.ID,
 	}
 
 	return response, ""

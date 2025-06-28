@@ -64,8 +64,6 @@ func MapRoutes(router *gin.Engine,
 
 			// Order images endpoints
 			orders.POST("/:orderId/images/upload-url", authMiddleware.VerifyAccessToken, orderImageHandler.GenerateSignedUploadURL)
-			orders.POST("/:orderId/images", authMiddleware.VerifyAccessToken, orderImageHandler.UploadImage)
-			orders.GET("/:orderId/images", authMiddleware.VerifyAccessToken, orderImageHandler.GetImagesByOrderID)
 			orders.DELETE("/:orderId/images/:imageId", authMiddleware.VerifyAccessToken, orderImageHandler.DeleteImage)
 		}
 		inventory := v1.Group("/inventory")
