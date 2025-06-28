@@ -59,7 +59,7 @@ func (repo *OrderImageRepository) GetOneByIDQuery(ctx context.Context, id int, t
 }
 
 func (repo *OrderImageRepository) CreateCommand(ctx context.Context, orderImage *entity.OrderImage, tx *sqlx.Tx) error {
-	insertQuery := `INSERT INTO order_images(order_id, image_url) VALUES (:order_id, :image_url)`
+	insertQuery := `INSERT INTO order_images(order_id, image_url, s3_key) VALUES (:order_id, :image_url, :s3_key)`
 	var result sql.Result
 	var err error
 	if tx != nil {

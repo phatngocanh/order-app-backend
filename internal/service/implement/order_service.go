@@ -8,6 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/pna/order-app-backend/internal/bean"
 	"github.com/pna/order-app-backend/internal/controller/http/middleware"
 	"github.com/pna/order-app-backend/internal/domain/entity"
 	"github.com/pna/order-app-backend/internal/domain/model"
@@ -26,6 +27,8 @@ type OrderService struct {
 	productRepo          repository.ProductRepository
 	unitOfWork           repository.UnitOfWork
 	customerRepo         repository.CustomerRepository
+	orderImageRepo       repository.OrderImageRepository
+	s3Service            bean.S3Service
 }
 
 func NewOrderService(
@@ -36,7 +39,9 @@ func NewOrderService(
 	userRepo repository.UserRepository,
 	unitOfWork repository.UnitOfWork,
 	productRepo repository.ProductRepository,
-	customerRepo repository.CustomerRepository) service.OrderService {
+	customerRepo repository.CustomerRepository,
+	orderImageRepo repository.OrderImageRepository,
+	s3Service bean.S3Service) service.OrderService {
 	return &OrderService{
 		orderRepo:            orderRepo,
 		orderItemRepo:        orderItemRepo,
@@ -46,6 +51,8 @@ func NewOrderService(
 		unitOfWork:           unitOfWork,
 		productRepo:          productRepo,
 		customerRepo:         customerRepo,
+		orderImageRepo:       orderImageRepo,
+		s3Service:            s3Service,
 	}
 }
 
@@ -241,6 +248,35 @@ func (s *OrderService) GetOne(ctx context.Context, id int) (model.GetOneOrderRes
 		totalProfitLossPercentage = float64(totalProfitLoss) / float64(order.TotalOriginalCost) * 100
 	}
 
+	// Fetch order images and generate signed URLs
+	orderImages, err := s.orderImageRepo.GetAllByOrderIDQuery(ctx, order.ID, nil)
+	if err != nil {
+		log.Error("OrderService.GetOne Error fetching order images: " + err.Error())
+		// Continue without images rather than failing the entire request
+		orderImages = make([]entity.OrderImage, 0)
+	}
+
+	// Convert images to response model with signed URLs
+	var imageResponses []model.OrderImage
+	if len(orderImages) > 0 {
+		for _, img := range orderImages {
+			// Generate a fresh signed URL for each image
+			signedURL, err := s.s3Service.GenerateSignedDownloadURL(ctx, img.S3Key, 1*time.Hour)
+			if err != nil {
+				log.Error("OrderService.GetOne Error generating signed URL for image: " + err.Error())
+				// Continue with other images even if one fails
+				signedURL = ""
+			}
+
+			imageResponses = append(imageResponses, model.OrderImage{
+				ID:       img.ID,
+				OrderID:  img.OrderID,
+				ImageURL: signedURL,
+				S3Key:    img.S3Key,
+			})
+		}
+	}
+
 	resp := model.GetOneOrderResponse{Order: model.OrderResponse{
 		ID:                   order.ID,
 		OrderDate:            order.OrderDate,
@@ -257,6 +293,7 @@ func (s *OrderService) GetOne(ctx context.Context, id int) (model.GetOneOrderRes
 			Address: customer.Address,
 		},
 		OrderItems:   orderItemResponses,
+		Images:       imageResponses,
 		TotalAmount:  &totalAmount,
 		ProductCount: &productCount,
 		// Profit/Loss fields for total order

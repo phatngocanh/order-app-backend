@@ -39,7 +39,7 @@ func (s *OrderImageService) UploadImage(ctx *gin.Context, orderID int, file io.R
 	}
 
 	// Generate a signed URL for immediate access
-	signedURL, err := s.s3Service.GenerateSignedDownloadURL(ctx, s3Key, 1*time.Hour)
+	signedURL, err := s.s3Service.GenerateSignedDownloadURL(ctx, s3Key, 5*time.Minute)
 	if err != nil {
 		log.Error("OrderImageService.UploadImage Error generating signed URL: " + err.Error())
 		return model.UploadOrderImageResponse{}, error_utils.ErrorCode.INTERNAL_SERVER_ERROR

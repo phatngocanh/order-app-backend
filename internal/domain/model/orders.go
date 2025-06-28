@@ -74,6 +74,7 @@ type OrderResponse struct {
 	AdditionalCostNote   *string             `json:"additional_cost_note"`
 	Customer             CustomerResponse    `json:"customer"`
 	OrderItems           []OrderItemResponse `json:"order_items,omitempty"`
+	Images               []OrderImage        `json:"images,omitempty"`
 	TotalAmount          *int                `json:"total_amount,omitempty"`
 	ProductCount         *int                `json:"product_count,omitempty"`
 	// Profit/Loss fields for total order
