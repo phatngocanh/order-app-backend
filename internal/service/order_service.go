@@ -8,7 +8,7 @@ import (
 )
 
 type OrderService interface {
-	GetAll(ctx context.Context) (model.GetAllOrdersResponse, string)
+	GetAll(ctx context.Context, userID int, customerID int, deliveryStatuses string) (model.GetAllOrdersResponse, string)
 	GetOne(ctx context.Context, id int) (model.GetOneOrderResponse, string)
 	Create(ctx *gin.Context, req model.CreateOrderRequest) string
 	Update(ctx context.Context, req model.UpdateOrderRequest) string

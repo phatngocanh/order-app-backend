@@ -87,15 +87,29 @@ func (h *OrderHandler) Update(ctx *gin.Context) {
 }
 
 // @Summary Get All Orders
-// @Description Retrieve all orders
+// @Description Retrieve all orders with optional filters
 // @Tags Orders
 // @Produce json
 // @Param  Authorization header string true "Authorization: Bearer"
+// @Param customer_id query int false "Filter by customer ID"
+// @Param delivery_statuses query string false "Filter by delivery statuses (comma-separated, e.g., PENDING,DELIVERED)"
 // @Success 200 {object} httpcommon.HttpResponse[model.GetAllOrdersResponse]
 // @Failure 500 {object} httpcommon.HttpResponse[any]
 // @Router /orders [get]
 func (h *OrderHandler) GetAll(ctx *gin.Context) {
-	response, errCode := h.orderService.GetAll(ctx)
+	// Get query parameters
+	customerIDStr := ctx.Query("customer_id")
+	deliveryStatuses := ctx.Query("delivery_statuses")
+
+	// Parse customer ID if provided
+	customerID := 0
+	if customerIDStr != "" {
+		if id, err := strconv.Atoi(customerIDStr); err == nil {
+			customerID = id
+		}
+	}
+
+	response, errCode := h.orderService.GetAll(ctx, 0, customerID, deliveryStatuses)
 	if errCode != "" {
 		statusCode, errResponse := error_utils.ErrorCodeToHttpResponse(errCode, "")
 		ctx.JSON(statusCode, errResponse)

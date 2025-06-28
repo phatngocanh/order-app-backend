@@ -3,6 +3,7 @@ package repositoryimplement
 import (
 	"context"
 	"database/sql"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/pna/order-app-backend/internal/database"
@@ -27,6 +28,49 @@ func (repo *OrderRepository) GetAllQuery(ctx context.Context, tx *sqlx.Tx) ([]en
 		err = tx.SelectContext(ctx, &orders, query)
 	} else {
 		err = repo.db.SelectContext(ctx, &orders, query)
+	}
+	if err != nil {
+		return nil, err
+	}
+	if orders == nil {
+		return []entity.Order{}, nil
+	}
+	return orders, nil
+}
+
+func (repo *OrderRepository) GetAllWithFiltersQuery(ctx context.Context, customerID int, deliveryStatuses string, tx *sqlx.Tx) ([]entity.Order, error) {
+	var orders []entity.Order
+	query := "SELECT * FROM orders WHERE 1=1"
+	var args []interface{}
+
+	// Add customer filter
+	if customerID > 0 {
+		query += " AND customer_id = ?"
+		args = append(args, customerID)
+	}
+
+	// Add delivery statuses filter using IN query
+	if deliveryStatuses != "" {
+		// Split the comma-separated statuses
+		statusList := strings.Split(deliveryStatuses, ",")
+		if len(statusList) > 0 {
+			// Create placeholders for IN query
+			placeholders := make([]string, len(statusList))
+			for i := range statusList {
+				placeholders[i] = "?"
+				args = append(args, strings.TrimSpace(statusList[i]))
+			}
+			query += " AND delivery_status IN (" + strings.Join(placeholders, ",") + ")"
+		}
+	}
+
+	query += " ORDER BY id DESC"
+
+	var err error
+	if tx != nil {
+		err = tx.SelectContext(ctx, &orders, query, args...)
+	} else {
+		err = repo.db.SelectContext(ctx, &orders, query, args...)
 	}
 	if err != nil {
 		return nil, err
