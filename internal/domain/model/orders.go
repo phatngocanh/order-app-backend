@@ -34,6 +34,8 @@ type CreateOrderRequest struct {
 	DebtStatus           string             `json:"debt_status"`                         // Trạng thái công nợ
 	StatusTransitionedAt *time.Time         `json:"status_transitioned_at"`              // Ngày chuyển trạng thái
 	ShippingFee          int                `json:"shipping_fee"`                        // Phí vận chuyển (VND)
+	AdditionalCost       int                `json:"additional_cost"`                     // Chi phí phát sinh thêm (VND)
+	AdditionalCostNote   *string            `json:"additional_cost_note"`                // Ghi chú cho chi phí phát sinh
 	OrderItems           []OrderItemRequest `json:"order_items" binding:"required,dive"` // Danh sách sản phẩm trong đơn
 }
 
@@ -45,6 +47,8 @@ type UpdateOrderRequest struct {
 	DebtStatus           string     `json:"debt_status"`            // Trạng thái công nợ
 	StatusTransitionedAt *time.Time `json:"status_transitioned_at"` // Ngày chuyển trạng thái
 	ShippingFee          int        `json:"shipping_fee"`           // Phí vận chuyển (VND)
+	AdditionalCost       int        `json:"additional_cost"`        // Chi phí phát sinh thêm (VND)
+	AdditionalCostNote   *string    `json:"additional_cost_note"`   // Ghi chú cho chi phí phát sinh
 }
 
 type OrderItemRequest struct {
@@ -66,6 +70,8 @@ type OrderResponse struct {
 	DebtStatus           string              `json:"debt_status"`
 	StatusTransitionedAt *time.Time          `json:"status_transitioned_at"`
 	ShippingFee          int                 `json:"shipping_fee"`
+	AdditionalCost       int                 `json:"additional_cost"`
+	AdditionalCostNote   *string             `json:"additional_cost_note"`
 	Customer             CustomerResponse    `json:"customer"`
 	OrderItems           []OrderItemResponse `json:"order_items,omitempty"`
 	TotalAmount          *int                `json:"total_amount,omitempty"`

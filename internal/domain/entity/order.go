@@ -12,6 +12,8 @@ type Order struct {
 	ShippingFee          int        `db:"shipping_fee"`
 	TotalOriginalCost    int        `db:"total_original_cost"`
 	TotalSalesRevenue    int        `db:"total_sales_revenue"`
+	AdditionalCost       int        `db:"additional_cost"`
+	AdditionalCostNote   *string    `db:"additonal_cost_note"`
 }
 
 type orderDeliveryStatus struct {

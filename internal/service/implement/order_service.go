@@ -122,9 +122,9 @@ func (s *OrderService) GetAll(ctx context.Context, userID int, customerID int, d
 			continue
 		}
 		totalAmount, productCount := calculateOrderAmountsAndProductCount(orderItems)
-
+		totalAmount += o.AdditionalCost
 		// Calculate profit/loss from stored cost and revenue values
-		totalProfitLoss := o.TotalSalesRevenue - o.TotalOriginalCost
+		totalProfitLoss := o.TotalSalesRevenue - o.TotalOriginalCost + o.AdditionalCost
 		totalProfitLossPercentage := 0.0
 		if o.TotalOriginalCost > 0 {
 			totalProfitLossPercentage = float64(totalProfitLoss) / float64(o.TotalOriginalCost) * 100
@@ -137,6 +137,8 @@ func (s *OrderService) GetAll(ctx context.Context, userID int, customerID int, d
 			DebtStatus:           o.DebtStatus,
 			StatusTransitionedAt: o.StatusTransitionedAt,
 			ShippingFee:          o.ShippingFee,
+			AdditionalCost:       o.AdditionalCost,
+			AdditionalCostNote:   o.AdditionalCostNote,
 			Customer: model.CustomerResponse{
 				ID:      customer.ID,
 				Name:    customer.Name,
@@ -233,7 +235,7 @@ func (s *OrderService) GetOne(ctx context.Context, id int) (model.GetOneOrderRes
 	totalAmount, productCount := calculateOrderAmountsAndProductCount(orderItems)
 
 	// Use stored values for total order profit/loss
-	totalProfitLoss = order.TotalSalesRevenue - order.TotalOriginalCost
+	totalProfitLoss = order.TotalSalesRevenue - order.TotalOriginalCost + order.AdditionalCost
 	totalProfitLossPercentage := 0.0
 	if order.TotalOriginalCost > 0 {
 		totalProfitLossPercentage = float64(totalProfitLoss) / float64(order.TotalOriginalCost) * 100
@@ -246,6 +248,8 @@ func (s *OrderService) GetOne(ctx context.Context, id int) (model.GetOneOrderRes
 		DebtStatus:           order.DebtStatus,
 		StatusTransitionedAt: order.StatusTransitionedAt,
 		ShippingFee:          order.ShippingFee,
+		AdditionalCost:       order.AdditionalCost,
+		AdditionalCostNote:   order.AdditionalCostNote,
 		Customer: model.CustomerResponse{
 			ID:      customer.ID,
 			Name:    customer.Name,
@@ -322,13 +326,15 @@ func (s *OrderService) Create(ctx *gin.Context, req model.CreateOrderRequest) st
 	}
 
 	orderEntity := entity.Order{
-		CustomerID:        req.CustomerID,
-		OrderDate:         req.OrderDate,
-		DeliveryStatus:    req.DeliveryStatus,
-		DebtStatus:        req.DebtStatus,
-		ShippingFee:       req.ShippingFee,
-		TotalOriginalCost: totalOriginalCost,
-		TotalSalesRevenue: totalSalesRevenue,
+		CustomerID:         req.CustomerID,
+		OrderDate:          req.OrderDate,
+		DeliveryStatus:     req.DeliveryStatus,
+		DebtStatus:         req.DebtStatus,
+		ShippingFee:        req.ShippingFee,
+		TotalOriginalCost:  totalOriginalCost,
+		TotalSalesRevenue:  totalSalesRevenue,
+		AdditionalCost:     req.AdditionalCost,
+		AdditionalCostNote: req.AdditionalCostNote,
 	}
 	now := time.Now()
 	orderEntity.StatusTransitionedAt = &now
@@ -478,8 +484,12 @@ func (s *OrderService) Update(ctx context.Context, req model.UpdateOrderRequest)
 	if req.DebtStatus != "" {
 		existing.DebtStatus = req.DebtStatus
 	}
-	// Update shipping fee if provided
-	existing.ShippingFee = req.ShippingFee
+	if req.AdditionalCost != 0 {
+		existing.AdditionalCost = req.AdditionalCost
+	}
+	if req.AdditionalCostNote != nil && *req.AdditionalCostNote != "" {
+		existing.AdditionalCostNote = req.AdditionalCostNote
+	}
 
 	err = s.orderRepo.UpdateCommand(ctx, existing, nil)
 	if err != nil {
