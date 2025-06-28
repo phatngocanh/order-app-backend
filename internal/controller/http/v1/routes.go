@@ -67,6 +67,10 @@ func MapRoutes(router *gin.Engine,
 			orders.GET("/:orderId/images", authMiddleware.VerifyAccessToken, orderImageHandler.GetImagesByOrderID)
 			orders.DELETE("/:orderId/images/:imageId", authMiddleware.VerifyAccessToken, orderImageHandler.DeleteImage)
 		}
+		inventory := v1.Group("/inventory")
+		{
+			inventory.GET("", authMiddleware.VerifyAccessToken, inventoryHandler.GetAll)
+		}
 		statistics := v1.Group("/statistics")
 		{
 			statistics.GET("/dashboard", authMiddleware.VerifyAccessToken, statisticsHandler.GetDashboardStats)

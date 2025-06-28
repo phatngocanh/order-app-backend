@@ -36,7 +36,7 @@ func InitializeContainer(db database.Db) *controller.ApiContainer {
 	productService := serviceimplement.NewProductService(productRepository, inventoryRepository, unitOfWork)
 	productHandler := v1.NewProductHandler(productService)
 	inventoryHistoryRepository := repositoryimplement.NewInventoryHistoryRepository(db)
-	inventoryService := serviceimplement.NewInventoryService(inventoryRepository, inventoryHistoryRepository, userRepository, unitOfWork)
+	inventoryService := serviceimplement.NewInventoryService(inventoryRepository, inventoryHistoryRepository, userRepository, productRepository, unitOfWork)
 	inventoryHandler := v1.NewInventoryHandler(inventoryService)
 	inventoryHistoryService := serviceimplement.NewInventoryHistoryService(inventoryHistoryRepository)
 	inventoryHistoryHandler := v1.NewInventoryHistoryHandler(inventoryHistoryService)

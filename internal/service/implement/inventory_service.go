@@ -1,6 +1,7 @@
 package serviceimplement
 
 import (
+	"context"
 	"errors"
 	"time"
 
@@ -19,16 +20,74 @@ type InventoryService struct {
 	inventoryRepository        repository.InventoryRepository
 	inventoryHistoryRepository repository.InventoryHistoryRepository
 	userRepository             repository.UserRepository
+	productRepository          repository.ProductRepository
 	unitOfWork                 repository.UnitOfWork
 }
 
-func NewInventoryService(inventoryRepository repository.InventoryRepository, inventoryHistoryRepository repository.InventoryHistoryRepository, userRepository repository.UserRepository, unitOfWork repository.UnitOfWork) service.InventoryService {
+func NewInventoryService(
+	inventoryRepository repository.InventoryRepository,
+	inventoryHistoryRepository repository.InventoryHistoryRepository,
+	userRepository repository.UserRepository,
+	productRepository repository.ProductRepository,
+	unitOfWork repository.UnitOfWork,
+) service.InventoryService {
 	return &InventoryService{
 		inventoryRepository:        inventoryRepository,
 		inventoryHistoryRepository: inventoryHistoryRepository,
 		userRepository:             userRepository,
+		productRepository:          productRepository,
 		unitOfWork:                 unitOfWork,
 	}
+}
+
+func (s *InventoryService) GetAll(ctx context.Context) (*model.GetAllInventoryResponse, string) {
+	// Get all inventory
+	inventories, err := s.inventoryRepository.GetAllQuery(ctx, nil)
+	if err != nil {
+		log.Error("InventoryService.GetAll Error when get inventories: " + err.Error())
+		return nil, error_utils.ErrorCode.DB_DOWN
+	}
+
+	// Convert to response models with product info
+	inventoryResponses := make([]model.InventoryWithProductResponse, len(inventories))
+	for i, inventory := range inventories {
+		// Get product info for this inventory
+		product, err := s.productRepository.GetOneByIDQuery(ctx, inventory.ProductID, nil)
+		if err != nil {
+			log.Error("InventoryService.GetAll Error when get product for inventory " + string(rune(inventory.ID)) + ": " + err.Error())
+			// Continue without product info for this inventory
+			inventoryResponses[i] = model.InventoryWithProductResponse{
+				ID:        inventory.ID,
+				ProductID: inventory.ProductID,
+				Quantity:  inventory.Quantity,
+				Version:   inventory.Version,
+				Product: model.ProductInfo{
+					ID:            inventory.ProductID,
+					Name:          "N/A",
+					Spec:          0,
+					OriginalPrice: 0,
+				},
+			}
+			continue
+		}
+
+		inventoryResponses[i] = model.InventoryWithProductResponse{
+			ID:        inventory.ID,
+			ProductID: inventory.ProductID,
+			Quantity:  inventory.Quantity,
+			Version:   inventory.Version,
+			Product: model.ProductInfo{
+				ID:            product.ID,
+				Name:          product.Name,
+				Spec:          product.Spec,
+				OriginalPrice: product.OriginalPrice,
+			},
+		}
+	}
+
+	return &model.GetAllInventoryResponse{
+		Inventories: inventoryResponses,
+	}, ""
 }
 
 func (s *InventoryService) GetByProductID(ctx *gin.Context, productID int) (*model.InventoryResponse, string) {

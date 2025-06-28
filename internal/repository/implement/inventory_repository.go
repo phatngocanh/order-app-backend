@@ -31,6 +31,24 @@ func (repo *InventoryRepository) CreateCommand(ctx context.Context, inventory *e
 	return err
 }
 
+func (repo *InventoryRepository) GetAllQuery(ctx context.Context, tx *sqlx.Tx) ([]entity.Inventory, error) {
+	var inventories []entity.Inventory
+	query := "SELECT * FROM inventory ORDER BY id"
+	var err error
+
+	if tx != nil {
+		err = tx.SelectContext(ctx, &inventories, query)
+	} else {
+		err = repo.db.SelectContext(ctx, &inventories, query)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return inventories, nil
+}
+
 func (repo *InventoryRepository) GetOneByProductIDQuery(ctx context.Context, productID int, tx *sqlx.Tx) (*entity.Inventory, error) {
 	var inventory entity.Inventory
 	query := "SELECT * FROM inventory WHERE product_id = ?"

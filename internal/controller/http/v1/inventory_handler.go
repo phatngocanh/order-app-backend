@@ -22,6 +22,27 @@ func NewInventoryHandler(inventoryService service.InventoryService) *InventoryHa
 	}
 }
 
+// @Summary Get All Inventory
+// @Description Retrieve all inventory information with product details
+// @Tags Inventory
+// @Produce json
+// @Param  Authorization header string true "Authorization: Bearer"
+// @Success 200 {object} httpcommon.HttpResponse[model.GetAllInventoryResponse]
+// @Failure 500 {object} httpcommon.HttpResponse[any]
+// @Router /inventory [get]
+func (h *InventoryHandler) GetAll(ctx *gin.Context) {
+	context := ctx.Request.Context()
+
+	response, errCode := h.inventoryService.GetAll(context)
+	if errCode != "" {
+		statusCode, errResponse := error_utils.ErrorCodeToHttpResponse(errCode, "")
+		ctx.JSON(statusCode, errResponse)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, httpcommon.NewSuccessResponse(response))
+}
+
 // @Summary Get Inventory by Product ID
 // @Description Retrieve inventory information for a specific product
 // @Tags Inventory
