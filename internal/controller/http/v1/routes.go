@@ -17,6 +17,7 @@ func MapRoutes(router *gin.Engine,
 	customerHandler *CustomerHandler,
 	orderHandler *OrderHandler,
 	orderImageHandler *OrderImageHandler,
+	statisticsHandler *StatisticsHandler,
 	authMiddleware *middleware.AuthMiddleware,
 ) {
 	// Apply CORS middleware to all routes
@@ -65,6 +66,10 @@ func MapRoutes(router *gin.Engine,
 			orders.POST("/:orderId/images", authMiddleware.VerifyAccessToken, orderImageHandler.UploadImage)
 			orders.GET("/:orderId/images", authMiddleware.VerifyAccessToken, orderImageHandler.GetImagesByOrderID)
 			orders.DELETE("/:orderId/images/:imageId", authMiddleware.VerifyAccessToken, orderImageHandler.DeleteImage)
+		}
+		statistics := v1.Group("/statistics")
+		{
+			statistics.GET("/dashboard", authMiddleware.VerifyAccessToken, statisticsHandler.GetDashboardStats)
 		}
 	}
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))

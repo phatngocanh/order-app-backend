@@ -24,6 +24,7 @@ type Server struct {
 	customerHandler         *v1.CustomerHandler
 	orderHandler            *v1.OrderHandler
 	orderImageHandler       *v1.OrderImageHandler
+	statisticsHandler       *v1.StatisticsHandler
 }
 
 func NewServer(
@@ -37,7 +38,7 @@ func NewServer(
 	customerHandler *v1.CustomerHandler,
 	orderHandler *v1.OrderHandler,
 	orderImageHandler *v1.OrderImageHandler,
-
+	statisticsHandler *v1.StatisticsHandler,
 ) *Server {
 	return &Server{
 		healthHandler:           healthHandler,
@@ -50,6 +51,7 @@ func NewServer(
 		customerHandler:         customerHandler,
 		orderHandler:            orderHandler,
 		orderImageHandler:       orderImageHandler,
+		statisticsHandler:       statisticsHandler,
 	}
 }
 
@@ -73,6 +75,7 @@ func (s *Server) Run() {
 		s.customerHandler,
 		s.orderHandler,
 		s.orderImageHandler,
+		s.statisticsHandler,
 		s.authMiddleware,
 	)
 	err := httpServerInstance.ListenAndServe()

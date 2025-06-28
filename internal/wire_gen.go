@@ -51,7 +51,9 @@ func InitializeContainer(db database.Db) *controller.ApiContainer {
 	s3Service := beanimplement.NewS3Service()
 	orderImageService := serviceimplement.NewOrderImageService(orderImageRepository, s3Service)
 	orderImageHandler := v1.NewOrderImageHandler(orderImageService)
-	server := http.NewServer(healthHandler, helloWorldHandler, authMiddleware, userHandler, productHandler, inventoryHandler, inventoryHistoryHandler, customerHandler, orderHandler, orderImageHandler)
+	statisticsService := serviceimplement.NewStatisticsService(productRepository, customerRepository, inventoryRepository, orderRepository)
+	statisticsHandler := v1.NewStatisticsHandler(statisticsService)
+	server := http.NewServer(healthHandler, helloWorldHandler, authMiddleware, userHandler, productHandler, inventoryHandler, inventoryHistoryHandler, customerHandler, orderHandler, orderImageHandler, statisticsHandler)
 	apiContainer := controller.NewApiContainer(server)
 	return apiContainer
 }
@@ -64,9 +66,9 @@ var container = wire.NewSet(controller.NewApiContainer)
 var serverSet = wire.NewSet(http.NewServer)
 
 // handler === controller | with service and repository layers to form 3 layers architecture
-var handlerSet = wire.NewSet(v1.NewHealthHandler, v1.NewHelloWorldHandler, v1.NewUserHandler, v1.NewProductHandler, v1.NewInventoryHandler, v1.NewInventoryHistoryHandler, v1.NewCustomerHandler, v1.NewOrderHandler, v1.NewOrderImageHandler)
+var handlerSet = wire.NewSet(v1.NewHealthHandler, v1.NewHelloWorldHandler, v1.NewUserHandler, v1.NewProductHandler, v1.NewInventoryHandler, v1.NewInventoryHistoryHandler, v1.NewCustomerHandler, v1.NewOrderHandler, v1.NewOrderImageHandler, v1.NewStatisticsHandler)
 
-var serviceSet = wire.NewSet(serviceimplement.NewHelloWorldService, serviceimplement.NewUserService, serviceimplement.NewProductService, serviceimplement.NewInventoryService, serviceimplement.NewInventoryHistoryService, serviceimplement.NewCustomerService, serviceimplement.NewOrderService, serviceimplement.NewOrderImageService)
+var serviceSet = wire.NewSet(serviceimplement.NewHelloWorldService, serviceimplement.NewUserService, serviceimplement.NewProductService, serviceimplement.NewInventoryService, serviceimplement.NewInventoryHistoryService, serviceimplement.NewCustomerService, serviceimplement.NewOrderService, serviceimplement.NewOrderImageService, serviceimplement.NewStatisticsService)
 
 var repositorySet = wire.NewSet(repositoryimplement.NewHelloWorldRepository, repositoryimplement.NewUserRepository, repositoryimplement.NewProductRepository, repositoryimplement.NewInventoryRepository, repositoryimplement.NewInventoryHistoryRepository, repositoryimplement.NewUnitOfWork, repositoryimplement.NewCustomerRepository, repositoryimplement.NewOrderRepository, repositoryimplement.NewOrderItemRepository, repositoryimplement.NewOrderImageRepository)
 

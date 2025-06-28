@@ -35,6 +35,7 @@ var handlerSet = wire.NewSet(
 	v1.NewCustomerHandler,
 	v1.NewOrderHandler,
 	v1.NewOrderImageHandler,
+	v1.NewStatisticsHandler,
 )
 
 var serviceSet = wire.NewSet(
@@ -46,6 +47,7 @@ var serviceSet = wire.NewSet(
 	serviceimplement.NewCustomerService,
 	serviceimplement.NewOrderService,
 	serviceimplement.NewOrderImageService,
+	serviceimplement.NewStatisticsService,
 )
 
 var repositorySet = wire.NewSet(
