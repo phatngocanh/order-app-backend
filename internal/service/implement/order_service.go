@@ -196,7 +196,7 @@ func (s *OrderService) GetOne(ctx context.Context, id int) (model.GetOneOrderRes
 		}
 
 		// Calculate profit/loss for this item
-		originalCost := item.Quantity * product.OriginalPrice
+		originalCost := item.Quantity * item.OriginalPrice
 		sellingRevenue := item.Quantity * item.SellingPrice
 		discountAmount := (sellingRevenue * item.Discount) / 100
 		finalRevenue := sellingRevenue - discountAmount
@@ -223,7 +223,7 @@ func (s *OrderService) GetOne(ctx context.Context, id int) (model.GetOneOrderRes
 			FinalAmount:   finalAmount,
 			ExportFrom:    item.ExportFrom,
 			// Profit/Loss fields
-			OriginalPrice:        &product.OriginalPrice,
+			OriginalPrice:        &item.OriginalPrice,
 			ProfitLoss:           &profitLoss,
 			ProfitLossPercentage: &profitLossPercentage,
 		})
@@ -365,6 +365,12 @@ func (s *OrderService) Create(ctx *gin.Context, req model.CreateOrderRequest) st
 			}
 		}
 
+		product, err := s.productRepo.GetOneByIDQuery(ctx, item.ProductID, nil)
+		if err != nil {
+			log.Error("OrderService.Create Error fetching product: " + err.Error())
+			return error_utils.ErrorCode.DB_DOWN
+		}
+
 		// Calculate final amount for the item
 		itemTotal := quantityToExport * item.SellingPrice
 		discountAmount := (itemTotal * item.Discount) / 100
@@ -376,6 +382,7 @@ func (s *OrderService) Create(ctx *gin.Context, req model.CreateOrderRequest) st
 			Spec:          item.Spec,
 			Quantity:      quantityToExport,
 			SellingPrice:  item.SellingPrice,
+			OriginalPrice: product.OriginalPrice,
 			Discount:      item.Discount,
 			FinalAmount:   &finalAmount,
 			OrderID:       orderEntity.ID,

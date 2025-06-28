@@ -37,7 +37,7 @@ func (repo *OrderItemRepository) GetAllByOrderIDQuery(ctx context.Context, order
 }
 
 func (repo *OrderItemRepository) CreateCommand(ctx context.Context, orderItem *entity.OrderItem, tx *sqlx.Tx) error {
-	insertQuery := `INSERT INTO order_items(order_id, product_id, number_of_boxes, spec, quantity, selling_price, discount, final_amount, export_from) VALUES (:order_id, :product_id, :number_of_boxes, :spec, :quantity, :selling_price, :discount, :final_amount, :export_from)`
+	insertQuery := `INSERT INTO order_items(order_id, product_id, number_of_boxes, spec, quantity, selling_price, original_price, discount, final_amount, export_from) VALUES (:order_id, :product_id, :number_of_boxes, :spec, :quantity, :selling_price, :original_price, :discount, :final_amount, :export_from)`
 	var result sql.Result
 	var err error
 	if tx != nil {

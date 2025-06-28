@@ -8,6 +8,7 @@ type OrderItem struct {
 	Spec          *int   `db:"spec"`            // Quy cách mỗi thùng
 	Quantity      int    `db:"quantity"`        // Số lượng cuối cùng
 	SellingPrice  int    `db:"selling_price"`   // Giá bán của sản phẩm (VND)
+	OriginalPrice int    `db:"original_price"`  // Giá gốc của sản phẩm (VND)
 	Discount      int    `db:"discount"`        // Chiết khấu (%)
 	FinalAmount   *int   `db:"final_amount"`    // Số tiền cuối cùng sau khi trừ chiết khấu (VND)
 	ExportFrom    string `db:"export_from"`     // Nguồn xuất: từ xưởng hoặc từ bên ngoài
