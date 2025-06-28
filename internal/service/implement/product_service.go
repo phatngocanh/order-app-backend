@@ -76,12 +76,16 @@ func (s *ProductService) Create(ctx *gin.Context, request model.CreateProductReq
 		return nil, error_utils.ErrorCode.DB_DOWN
 	}
 
-	// Return response
+	// Return response with inventory info
 	return &model.ProductResponse{
 		ID:            product.ID,
 		Name:          product.Name,
 		Spec:          product.Spec,
 		OriginalPrice: product.OriginalPrice,
+		Inventory: &model.InventoryInfo{
+			Quantity: inventory.Quantity,
+			Version:  inventory.Version,
+		},
 	}, ""
 }
 
@@ -112,12 +116,29 @@ func (s *ProductService) Update(ctx *gin.Context, request model.UpdateProductReq
 		return nil, error_utils.ErrorCode.DB_DOWN
 	}
 
-	// Return response
+	// Get inventory info for response
+	inventory, err := s.inventoryRepository.GetOneByProductIDQuery(ctx, product.ID, nil)
+	if err != nil {
+		log.Error("ProductService.Update Error when get inventory: " + err.Error())
+		// Don't fail the update, just return without inventory info
+		return &model.ProductResponse{
+			ID:            product.ID,
+			Name:          product.Name,
+			Spec:          product.Spec,
+			OriginalPrice: product.OriginalPrice,
+		}, ""
+	}
+
+	// Return response with inventory info
 	return &model.ProductResponse{
 		ID:            product.ID,
 		Name:          product.Name,
 		Spec:          product.Spec,
 		OriginalPrice: product.OriginalPrice,
+		Inventory: &model.InventoryInfo{
+			Quantity: inventory.Quantity,
+			Version:  inventory.Version,
+		},
 	}, ""
 }
 
@@ -129,14 +150,32 @@ func (s *ProductService) GetAll(ctx *gin.Context) (*model.GetAllProductsResponse
 		return nil, error_utils.ErrorCode.DB_DOWN
 	}
 
-	// Convert to response models
+	// Convert to response models with inventory info
 	productResponses := make([]model.ProductResponse, len(products))
 	for i, product := range products {
+		// Get inventory for this product
+		inventory, err := s.inventoryRepository.GetOneByProductIDQuery(ctx, product.ID, nil)
+		if err != nil {
+			log.Error("ProductService.GetAll Error when get inventory for product " + string(rune(product.ID)) + ": " + err.Error())
+			// Continue without inventory info for this product
+			productResponses[i] = model.ProductResponse{
+				ID:            product.ID,
+				Name:          product.Name,
+				Spec:          product.Spec,
+				OriginalPrice: product.OriginalPrice,
+			}
+			continue
+		}
+
 		productResponses[i] = model.ProductResponse{
 			ID:            product.ID,
 			Name:          product.Name,
 			Spec:          product.Spec,
 			OriginalPrice: product.OriginalPrice,
+			Inventory: &model.InventoryInfo{
+				Quantity: inventory.Quantity,
+				Version:  inventory.Version,
+			},
 		}
 	}
 
@@ -157,13 +196,32 @@ func (s *ProductService) GetOne(ctx *gin.Context, id int) (*model.GetOneProductR
 		return nil, error_utils.ErrorCode.NOT_FOUND
 	}
 
-	// Return response
+	// Get inventory for this product
+	inventory, err := s.inventoryRepository.GetOneByProductIDQuery(ctx, product.ID, nil)
+	if err != nil {
+		log.Error("ProductService.GetOne Error when get inventory: " + err.Error())
+		// Return product without inventory info
+		return &model.GetOneProductResponse{
+			Product: model.ProductResponse{
+				ID:            product.ID,
+				Name:          product.Name,
+				Spec:          product.Spec,
+				OriginalPrice: product.OriginalPrice,
+			},
+		}, ""
+	}
+
+	// Return response with inventory info
 	return &model.GetOneProductResponse{
 		Product: model.ProductResponse{
 			ID:            product.ID,
 			Name:          product.Name,
 			Spec:          product.Spec,
 			OriginalPrice: product.OriginalPrice,
+			Inventory: &model.InventoryInfo{
+				Quantity: inventory.Quantity,
+				Version:  inventory.Version,
+			},
 		},
 	}, ""
 }
