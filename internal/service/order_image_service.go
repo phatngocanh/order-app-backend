@@ -12,4 +12,5 @@ type OrderImageService interface {
 	UploadImage(ctx *gin.Context, orderID int, file io.Reader, fileName string) (model.UploadOrderImageResponse, string)
 	GetImagesByOrderID(ctx context.Context, orderID int) (model.GetOrderImagesResponse, string)
 	DeleteImage(ctx *gin.Context, imageID int) string
+	GenerateSignedUploadURL(ctx *gin.Context, orderID int, fileName string, contentType string) (model.GenerateSignedUploadURLResponse, string)
 }

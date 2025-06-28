@@ -20,6 +20,54 @@ func NewOrderImageHandler(orderImageService service.OrderImageService) *OrderIma
 	}
 }
 
+// @Summary Generate Signed Upload URL
+// @Description Generate a signed URL for uploading an image to S3
+// @Tags Order Images
+// @Produce json
+// @Param  Authorization header string true "Authorization: Bearer"
+// @Param orderId path int true "Order ID"
+// @Param fileName query string true "File name"
+// @Param contentType query string true "Content type (e.g., image/jpeg)"
+// @Success 200 {object} httpcommon.HttpResponse[model.GenerateSignedUploadURLResponse]
+// @Failure 400 {object} httpcommon.HttpResponse[any]
+// @Failure 401 {object} httpcommon.HttpResponse[any]
+// @Failure 500 {object} httpcommon.HttpResponse[any]
+// @Router /orders/{orderId}/images/upload-url [post]
+func (h *OrderImageHandler) GenerateSignedUploadURL(ctx *gin.Context) {
+	// Get order ID from path parameter
+	orderID, err := strconv.Atoi(ctx.Param("orderId"))
+	if err != nil {
+		statusCode, errResponse := error_utils.ErrorCodeToHttpResponse(error_utils.ErrorCode.BAD_REQUEST, "orderId")
+		ctx.JSON(statusCode, errResponse)
+		return
+	}
+
+	// Get query parameters
+	fileName := ctx.Query("fileName")
+	if fileName == "" {
+		statusCode, errResponse := error_utils.ErrorCodeToHttpResponse(error_utils.ErrorCode.BAD_REQUEST, "fileName is required")
+		ctx.JSON(statusCode, errResponse)
+		return
+	}
+
+	contentType := ctx.Query("contentType")
+	if contentType == "" {
+		statusCode, errResponse := error_utils.ErrorCodeToHttpResponse(error_utils.ErrorCode.BAD_REQUEST, "contentType is required")
+		ctx.JSON(statusCode, errResponse)
+		return
+	}
+
+	// Generate signed upload URL
+	response, errCode := h.orderImageService.GenerateSignedUploadURL(ctx, orderID, fileName, contentType)
+	if errCode != "" {
+		statusCode, errResponse := error_utils.ErrorCodeToHttpResponse(errCode, "")
+		ctx.JSON(statusCode, errResponse)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, httpcommon.NewSuccessResponse(&response))
+}
+
 // @Summary Upload Order Image
 // @Description Upload an image for a specific order
 // @Tags Order Images

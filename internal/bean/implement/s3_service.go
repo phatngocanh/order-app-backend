@@ -84,36 +84,71 @@ func (s *S3Service) UploadImage(ctx context.Context, file io.Reader, fileName st
 		return "", fmt.Errorf("failed to upload file to S3: %w", err)
 	}
 
-	// Return the S3 URL
-	s3URL := fmt.Sprintf("https://%s.s3.amazonaws.com/%s", s.bucketName, key)
-	return s3URL, nil
+	// Return the S3 key instead of public URL
+	return key, nil
 }
 
-func (s *S3Service) DeleteImage(ctx context.Context, imageURL string) error {
+func (s *S3Service) DeleteImage(ctx context.Context, s3Key string) error {
 	if !s.enabled {
 		return fmt.Errorf("S3 service is not enabled - check AWS configuration")
 	}
 
-	// Extract the key from the S3 URL
-	// URL format: https://bucket-name.s3.amazonaws.com/key
-	// We need to extract the key part after the bucket name
-
-	// For now, we'll implement a simple extraction
-	// In production, you might want to store the key separately or parse the URL more robustly
-	key := imageURL
-	if len(imageURL) > len("https://") {
-		// Remove the protocol and bucket part
-		// This is a simplified approach - you might want to use URL parsing for production
-		key = imageURL[len("https://"+s.bucketName+".s3.amazonaws.com/"):]
-	}
-
 	_, err := s.s3Client.DeleteObject(ctx, &s3.DeleteObjectInput{
 		Bucket: aws.String(s.bucketName),
-		Key:    aws.String(key),
+		Key:    aws.String(s3Key),
 	})
 	if err != nil {
 		return fmt.Errorf("failed to delete file from S3: %w", err)
 	}
 
 	return nil
+}
+
+func (s *S3Service) GenerateSignedUploadURL(ctx context.Context, fileName string, contentType string) (string, string, error) {
+	if !s.enabled {
+		return "", "", fmt.Errorf("S3 service is not enabled - check AWS configuration")
+	}
+
+	// Generate unique filename with timestamp
+	timestamp := time.Now().Unix()
+	ext := filepath.Ext(fileName)
+	uniqueFileName := fmt.Sprintf("%s%d%s", filepath.Base(fileName[:len(fileName)-len(ext)]), timestamp, ext)
+
+	// Create the full key (path) for the file
+	key := s.prefix + uniqueFileName
+
+	// Generate presigned URL for PUT operation
+	presignClient := s3.NewPresignClient(s.s3Client)
+
+	request, err := presignClient.PresignPutObject(ctx, &s3.PutObjectInput{
+		Bucket:      aws.String(s.bucketName),
+		Key:         aws.String(key),
+		ContentType: aws.String(contentType),
+	}, s3.WithPresignExpires(2*time.Minute)) // URL expires in 15 minutes
+
+	if err != nil {
+		return "", "", fmt.Errorf("failed to generate presigned upload URL: %w", err)
+	}
+
+	return request.URL, key, nil
+}
+
+func (s *S3Service) GenerateSignedDownloadURL(ctx context.Context, s3Key string, expiresIn time.Duration) (string, error) {
+	if !s.enabled {
+		return "", fmt.Errorf("S3 service is not enabled - check AWS configuration")
+	}
+
+	// Generate presigned URL for GET operation
+	presignClient := s3.NewPresignClient(s.s3Client)
+
+	request, err := presignClient.PresignGetObject(ctx, &s3.GetObjectInput{
+		Bucket: aws.String(s.bucketName),
+		Key:    aws.String(s3Key),
+	}, s3.WithPresignExpires(expiresIn))
+
+	if err != nil {
+		return "", fmt.Errorf("failed to generate presigned download URL: %w", err)
+	}
+
+	return request.URL, nil
 }
