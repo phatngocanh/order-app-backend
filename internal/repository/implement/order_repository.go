@@ -38,7 +38,7 @@ func (repo *OrderRepository) GetAllQuery(ctx context.Context, tx *sqlx.Tx) ([]en
 	return orders, nil
 }
 
-func (repo *OrderRepository) GetAllWithFiltersQuery(ctx context.Context, customerID int, deliveryStatuses string, tx *sqlx.Tx) ([]entity.Order, error) {
+func (repo *OrderRepository) GetAllWithFiltersQuery(ctx context.Context, customerID int, deliveryStatuses string, sortBy string, tx *sqlx.Tx) ([]entity.Order, error) {
 	var orders []entity.Order
 	query := "SELECT * FROM orders WHERE 1=1"
 	var args []interface{}
@@ -64,7 +64,15 @@ func (repo *OrderRepository) GetAllWithFiltersQuery(ctx context.Context, custome
 		}
 	}
 
-	query += " ORDER BY id DESC"
+	// Add sorting
+	switch sortBy {
+	case "order_date_asc":
+		query += " ORDER BY order_date ASC"
+	case "order_date_desc":
+		query += " ORDER BY order_date DESC"
+	default:
+		query += " ORDER BY id DESC"
+	}
 
 	var err error
 	if tx != nil {

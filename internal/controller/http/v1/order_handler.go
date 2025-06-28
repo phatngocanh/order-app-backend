@@ -87,12 +87,13 @@ func (h *OrderHandler) Update(ctx *gin.Context) {
 }
 
 // @Summary Get All Orders
-// @Description Retrieve all orders with optional filters
+// @Description Retrieve all orders with optional filters and sorting
 // @Tags Orders
 // @Produce json
 // @Param  Authorization header string true "Authorization: Bearer"
 // @Param customer_id query int false "Filter by customer ID"
 // @Param delivery_statuses query string false "Filter by delivery statuses (comma-separated, e.g., PENDING,DELIVERED)"
+// @Param sort_by query string false "Sort by: order_date_asc, order_date_desc (default: id DESC)"
 // @Success 200 {object} httpcommon.HttpResponse[model.GetAllOrdersResponse]
 // @Failure 500 {object} httpcommon.HttpResponse[any]
 // @Router /orders [get]
@@ -100,6 +101,7 @@ func (h *OrderHandler) GetAll(ctx *gin.Context) {
 	// Get query parameters
 	customerIDStr := ctx.Query("customer_id")
 	deliveryStatuses := ctx.Query("delivery_statuses")
+	sortBy := ctx.Query("sort_by")
 
 	// Parse customer ID if provided
 	customerID := 0
@@ -109,7 +111,7 @@ func (h *OrderHandler) GetAll(ctx *gin.Context) {
 		}
 	}
 
-	response, errCode := h.orderService.GetAll(ctx, 0, customerID, deliveryStatuses)
+	response, errCode := h.orderService.GetAll(ctx, 0, customerID, deliveryStatuses, sortBy)
 	if errCode != "" {
 		statusCode, errResponse := error_utils.ErrorCodeToHttpResponse(errCode, "")
 		ctx.JSON(statusCode, errResponse)

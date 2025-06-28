@@ -99,8 +99,8 @@ func (s *OrderService) calculateOrderCostAndRevenue(ctx context.Context, orderIt
 	return totalOriginalCost, totalSalesRevenue, ""
 }
 
-func (s *OrderService) GetAll(ctx context.Context, userID int, customerID int, deliveryStatuses string) (model.GetAllOrdersResponse, string) {
-	orders, err := s.orderRepo.GetAllWithFiltersQuery(ctx, customerID, deliveryStatuses, nil)
+func (s *OrderService) GetAll(ctx context.Context, userID int, customerID int, deliveryStatuses string, sortBy string) (model.GetAllOrdersResponse, string) {
+	orders, err := s.orderRepo.GetAllWithFiltersQuery(ctx, customerID, deliveryStatuses, sortBy, nil)
 	if err != nil {
 		log.Error("OrderService.GetAll Error: " + err.Error())
 		return model.GetAllOrdersResponse{}, error_utils.ErrorCode.DB_DOWN
