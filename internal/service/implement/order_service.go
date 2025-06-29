@@ -516,13 +516,13 @@ func (s *OrderService) Update(ctx context.Context, req model.UpdateOrderRequest)
 		now := time.Now()
 		existing.StatusTransitionedAt = &now
 	}
-	if req.DebtStatus != "" {
+	if req.DebtStatus != nil {
 		existing.DebtStatus = req.DebtStatus
 	}
 	if req.AdditionalCost != nil {
 		existing.AdditionalCost = *req.AdditionalCost
 	}
-	if req.AdditionalCostNote != nil && *req.AdditionalCostNote != "" {
+	if req.AdditionalCostNote != nil {
 		existing.AdditionalCostNote = req.AdditionalCostNote
 	}
 

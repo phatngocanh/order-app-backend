@@ -7,7 +7,7 @@ type Order struct {
 	CustomerID           int        `db:"customer_id"`
 	OrderDate            time.Time  `db:"order_date"`
 	DeliveryStatus       string     `db:"delivery_status"`
-	DebtStatus           string     `db:"debt_status"`
+	DebtStatus           *string    `db:"debt_status"`
 	StatusTransitionedAt *time.Time `db:"status_transitioned_at"`
 	TotalOriginalCost    int        `db:"total_original_cost"`
 	TotalSalesRevenue    int        `db:"total_sales_revenue"`

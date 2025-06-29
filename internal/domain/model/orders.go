@@ -30,7 +30,7 @@ type CreateOrderRequest struct {
 	CustomerID           int                `json:"customer_id" binding:"required"`      // Mã khách hàng
 	OrderDate            time.Time          `json:"order_date" binding:"required"`       // Ngày đặt hàng
 	DeliveryStatus       string             `json:"delivery_status" binding:"required"`  // Trạng thái giao hàng
-	DebtStatus           string             `json:"debt_status"`                         // Trạng thái công nợ
+	DebtStatus           *string            `json:"debt_status"`                         // Trạng thái công nợ
 	StatusTransitionedAt *time.Time         `json:"status_transitioned_at"`              // Ngày chuyển trạng thái
 	AdditionalCost       int                `json:"additional_cost"`                     // Chi phí phát sinh thêm (VND)
 	AdditionalCostNote   *string            `json:"additional_cost_note"`                // Ghi chú cho chi phí phát sinh
@@ -42,7 +42,7 @@ type UpdateOrderRequest struct {
 	CustomerID           int        `json:"customer_id"`            // Mã khách hàng
 	OrderDate            time.Time  `json:"order_date"`             // Ngày đặt hàng
 	DeliveryStatus       string     `json:"delivery_status"`        // Trạng thái giao hàng
-	DebtStatus           string     `json:"debt_status"`            // Trạng thái công nợ
+	DebtStatus           *string    `json:"debt_status"`            // Trạng thái công nợ
 	StatusTransitionedAt *time.Time `json:"status_transitioned_at"` // Ngày chuyển trạng thái
 	AdditionalCost       *int       `json:"additional_cost"`        // Chi phí phát sinh thêm (VND)
 	AdditionalCostNote   *string    `json:"additional_cost_note"`   // Ghi chú cho chi phí phát sinh
@@ -64,7 +64,7 @@ type OrderResponse struct {
 	ID                   int                 `json:"id"`
 	OrderDate            time.Time           `json:"order_date"`
 	DeliveryStatus       string              `json:"delivery_status"`
-	DebtStatus           string              `json:"debt_status"`
+	DebtStatus           *string             `json:"debt_status"`
 	StatusTransitionedAt *time.Time          `json:"status_transitioned_at"`
 	AdditionalCost       int                 `json:"additional_cost"`
 	AdditionalCostNote   *string             `json:"additional_cost_note"`
