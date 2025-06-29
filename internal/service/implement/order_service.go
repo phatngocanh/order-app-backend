@@ -239,6 +239,7 @@ func (s *OrderService) GetOne(ctx context.Context, id int) (model.GetOneOrderRes
 	}
 
 	totalAmount, productCount := calculateOrderAmountsAndProductCount(orderItems)
+	totalAmount += order.AdditionalCost
 
 	// Use stored values for total order profit/loss
 	totalProfitLoss = order.TotalSalesRevenue - order.TotalOriginalCost + order.AdditionalCost
