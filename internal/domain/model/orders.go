@@ -44,7 +44,7 @@ type UpdateOrderRequest struct {
 	DeliveryStatus       string     `json:"delivery_status"`        // Trạng thái giao hàng
 	DebtStatus           string     `json:"debt_status"`            // Trạng thái công nợ
 	StatusTransitionedAt *time.Time `json:"status_transitioned_at"` // Ngày chuyển trạng thái
-	AdditionalCost       int        `json:"additional_cost"`        // Chi phí phát sinh thêm (VND)
+	AdditionalCost       *int       `json:"additional_cost"`        // Chi phí phát sinh thêm (VND)
 	AdditionalCostNote   *string    `json:"additional_cost_note"`   // Ghi chú cho chi phí phát sinh
 }
 

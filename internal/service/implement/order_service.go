@@ -518,8 +518,8 @@ func (s *OrderService) Update(ctx context.Context, req model.UpdateOrderRequest)
 	if req.DebtStatus != "" {
 		existing.DebtStatus = req.DebtStatus
 	}
-	if req.AdditionalCost != 0 {
-		existing.AdditionalCost = req.AdditionalCost
+	if req.AdditionalCost != nil {
+		existing.AdditionalCost = *req.AdditionalCost
 	}
 	if req.AdditionalCostNote != nil && *req.AdditionalCostNote != "" {
 		existing.AdditionalCostNote = req.AdditionalCostNote
