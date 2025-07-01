@@ -34,6 +34,7 @@ type CreateOrderRequest struct {
 	StatusTransitionedAt *time.Time         `json:"status_transitioned_at"`              // Ngày chuyển trạng thái
 	AdditionalCost       int                `json:"additional_cost"`                     // Chi phí phát sinh thêm (VND)
 	AdditionalCostNote   *string            `json:"additional_cost_note"`                // Ghi chú cho chi phí phát sinh
+	TaxPercent           int                `json:"tax_percent"`                         // Phần trăm thuế (%)
 	OrderItems           []OrderItemRequest `json:"order_items" binding:"required,dive"` // Danh sách sản phẩm trong đơn
 }
 
@@ -46,6 +47,7 @@ type UpdateOrderRequest struct {
 	StatusTransitionedAt *time.Time `json:"status_transitioned_at"` // Ngày chuyển trạng thái
 	AdditionalCost       *int       `json:"additional_cost"`        // Chi phí phát sinh thêm (VND)
 	AdditionalCostNote   *string    `json:"additional_cost_note"`   // Ghi chú cho chi phí phát sinh
+	TaxPercent           *int       `json:"tax_percent"`            // Phần trăm thuế (%)
 }
 
 type OrderItemRequest struct {
@@ -73,6 +75,7 @@ type OrderResponse struct {
 	Images               []OrderImage        `json:"images,omitempty"`
 	TotalAmount          *int                `json:"total_amount,omitempty"`
 	ProductCount         *int                `json:"product_count,omitempty"`
+	TaxPercent           *int                `json:"tax_percent,omitempty"`
 	// Profit/Loss fields for total order
 	TotalProfitLoss           *int     `json:"total_profit_loss,omitempty"`            // Total profit/loss for the order
 	TotalProfitLossPercentage *float64 `json:"total_profit_loss_percentage,omitempty"` // Total profit/loss percentage for the order

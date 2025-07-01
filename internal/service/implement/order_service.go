@@ -130,6 +130,7 @@ func (s *OrderService) GetAll(ctx context.Context, userID int, customerID int, d
 		}
 		totalAmount, productCount := calculateOrderAmountsAndProductCount(orderItems)
 		totalAmount += o.AdditionalCost
+		totalAmount += int(float64(totalAmount) * float64(o.TaxPercent) / 100)
 		// Calculate profit/loss from stored cost and revenue values
 		totalProfitLoss := o.TotalSalesRevenue - o.TotalOriginalCost + o.AdditionalCost
 		totalProfitLossPercentage := 0.0
@@ -152,6 +153,7 @@ func (s *OrderService) GetAll(ctx context.Context, userID int, customerID int, d
 				Address: customer.Address,
 			},
 			OrderItems:                nil, // Omit order items in GetAll
+			TaxPercent:                &o.TaxPercent,
 			TotalAmount:               &totalAmount,
 			ProductCount:              &productCount,
 			TotalProfitLoss:           &totalProfitLoss,
@@ -240,6 +242,7 @@ func (s *OrderService) GetOne(ctx context.Context, id int) (model.GetOneOrderRes
 
 	totalAmount, productCount := calculateOrderAmountsAndProductCount(orderItems)
 	totalAmount += order.AdditionalCost
+	totalAmount += int(float64(totalAmount) * float64(order.TaxPercent) / 100)
 
 	// Use stored values for total order profit/loss
 	totalProfitLoss = order.TotalSalesRevenue - order.TotalOriginalCost + order.AdditionalCost
@@ -295,6 +298,7 @@ func (s *OrderService) GetOne(ctx context.Context, id int) (model.GetOneOrderRes
 		Images:       imageResponses,
 		TotalAmount:  &totalAmount,
 		ProductCount: &productCount,
+		TaxPercent:   &order.TaxPercent,
 		// Profit/Loss fields for total order
 		TotalProfitLoss:           &totalProfitLoss,
 		TotalProfitLossPercentage: &totalProfitLossPercentage,
@@ -370,6 +374,7 @@ func (s *OrderService) Create(ctx *gin.Context, req model.CreateOrderRequest) st
 		TotalSalesRevenue:  totalSalesRevenue,
 		AdditionalCost:     req.AdditionalCost,
 		AdditionalCostNote: req.AdditionalCostNote,
+		TaxPercent:         req.TaxPercent,
 	}
 	now := time.Now()
 	orderEntity.StatusTransitionedAt = &now
@@ -524,6 +529,9 @@ func (s *OrderService) Update(ctx context.Context, req model.UpdateOrderRequest)
 	}
 	if req.AdditionalCostNote != nil {
 		existing.AdditionalCostNote = req.AdditionalCostNote
+	}
+	if req.TaxPercent != nil {
+		existing.TaxPercent = *req.TaxPercent
 	}
 
 	err = s.orderRepo.UpdateCommand(ctx, existing, nil)

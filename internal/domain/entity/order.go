@@ -13,6 +13,7 @@ type Order struct {
 	TotalSalesRevenue    int        `db:"total_sales_revenue"`
 	AdditionalCost       int        `db:"additional_cost"`
 	AdditionalCostNote   *string    `db:"additonal_cost_note"`
+	TaxPercent           int        `db:"tax_percent"`
 }
 
 type orderDeliveryStatus struct {
