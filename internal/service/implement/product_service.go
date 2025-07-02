@@ -35,10 +35,8 @@ func (s *ProductService) Create(ctx *gin.Context, request model.CreateProductReq
 
 	// Defer rollback in case of error
 	defer func() {
-		if err != nil {
-			if rollbackErr := s.unitOfWork.Rollback(tx); rollbackErr != nil {
-				log.Error("ProductService.Create Error when rollback transaction: " + rollbackErr.Error())
-			}
+		if rollbackErr := s.unitOfWork.Rollback(tx); rollbackErr != nil {
+			log.Error("ProductService.Create Error when rollback transaction: " + rollbackErr.Error())
 		}
 	}()
 
