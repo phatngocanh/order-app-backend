@@ -79,6 +79,7 @@ type OrderResponse struct {
 	// Profit/Loss fields for total order
 	TotalProfitLoss           *int     `json:"total_profit_loss,omitempty"`            // Total profit/loss for the order
 	TotalProfitLossPercentage *float64 `json:"total_profit_loss_percentage,omitempty"` // Total profit/loss percentage for the order
+	TotalSalesRevenue         int      `json:"total_sales_revenue"`                    // Total sales revenue for the order
 }
 
 type OrderItemResponse struct {

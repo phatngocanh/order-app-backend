@@ -302,6 +302,7 @@ func (s *OrderService) GetOne(ctx context.Context, id int) (model.GetOneOrderRes
 		// Profit/Loss fields for total order
 		TotalProfitLoss:           &totalProfitLoss,
 		TotalProfitLossPercentage: &totalProfitLossPercentage,
+		TotalSalesRevenue:         order.TotalSalesRevenue,
 	}}
 	return resp, ""
 }
