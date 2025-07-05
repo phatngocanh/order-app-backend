@@ -2,13 +2,14 @@ package service
 
 import (
 	"context"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/pna/order-app-backend/internal/domain/model"
 )
 
 type OrderService interface {
-	GetAll(ctx context.Context, userID int, customerID int, deliveryStatuses string, sortBy string) (model.GetAllOrdersResponse, string)
+	GetAll(ctx context.Context, userID int, customerID int, deliveryStatuses string, sortBy string, fromDate *time.Time, toDate *time.Time) (model.GetAllOrdersResponse, string)
 	GetOne(ctx context.Context, id int) (model.GetOneOrderResponse, string)
 	Create(ctx *gin.Context, req model.CreateOrderRequest) string
 	Update(ctx context.Context, req model.UpdateOrderRequest) string

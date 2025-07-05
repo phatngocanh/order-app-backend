@@ -101,7 +101,9 @@ type OrderItemResponse struct {
 }
 
 type GetAllOrdersResponse struct {
-	Orders []OrderResponse `json:"orders"`
+	AllOrderTotalAmount     int             `json:"all_order_total_amount"`
+	AllOrderTotalProfitLoss int             `json:"all_order_total_profit_loss"`
+	Orders                  []OrderResponse `json:"orders"`
 }
 
 type GetOneOrderResponse struct {

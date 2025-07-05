@@ -106,12 +106,15 @@ func (s *OrderService) calculateOrderCostAndRevenue(ctx context.Context, orderIt
 	return totalOriginalCost, totalSalesRevenue, ""
 }
 
-func (s *OrderService) GetAll(ctx context.Context, userID int, customerID int, deliveryStatuses string, sortBy string) (model.GetAllOrdersResponse, string) {
-	orders, err := s.orderRepo.GetAllWithFiltersQuery(ctx, customerID, deliveryStatuses, sortBy, nil)
+func (s *OrderService) GetAll(ctx context.Context, userID int, customerID int, deliveryStatuses string, sortBy string, fromDate *time.Time, toDate *time.Time) (model.GetAllOrdersResponse, string) {
+	orders, err := s.orderRepo.GetAllWithFiltersQuery(ctx, customerID, deliveryStatuses, sortBy, fromDate, toDate, nil)
 	if err != nil {
 		log.Error("OrderService.GetAll Error: " + err.Error())
 		return model.GetAllOrdersResponse{}, error_utils.ErrorCode.DB_DOWN
 	}
+
+	allOrderTotalAmount := 0
+	allOrderTotalProfitLoss := 0
 
 	resp := model.GetAllOrdersResponse{Orders: make([]model.OrderResponse, 0, len(orders))}
 	for _, o := range orders {
@@ -138,6 +141,9 @@ func (s *OrderService) GetAll(ctx context.Context, userID int, customerID int, d
 			totalProfitLossPercentage = float64(totalProfitLoss) / float64(o.TotalOriginalCost) * 100
 		}
 
+		allOrderTotalAmount += totalAmount
+		allOrderTotalProfitLoss += totalProfitLoss
+
 		resp.Orders = append(resp.Orders, model.OrderResponse{
 			ID:                   o.ID,
 			OrderDate:            o.OrderDate,
@@ -160,6 +166,10 @@ func (s *OrderService) GetAll(ctx context.Context, userID int, customerID int, d
 			TotalProfitLossPercentage: &totalProfitLossPercentage,
 		})
 	}
+
+	resp.AllOrderTotalAmount = allOrderTotalAmount
+	resp.AllOrderTotalProfitLoss = allOrderTotalProfitLoss
+
 	return resp, ""
 }
 

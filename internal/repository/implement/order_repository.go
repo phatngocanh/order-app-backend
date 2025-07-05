@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"strings"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/pna/order-app-backend/internal/database"
@@ -38,7 +39,7 @@ func (repo *OrderRepository) GetAllQuery(ctx context.Context, tx *sqlx.Tx) ([]en
 	return orders, nil
 }
 
-func (repo *OrderRepository) GetAllWithFiltersQuery(ctx context.Context, customerID int, deliveryStatuses string, sortBy string, tx *sqlx.Tx) ([]entity.Order, error) {
+func (repo *OrderRepository) GetAllWithFiltersQuery(ctx context.Context, customerID int, deliveryStatuses string, sortBy string, fromDate *time.Time, toDate *time.Time, tx *sqlx.Tx) ([]entity.Order, error) {
 	var orders []entity.Order
 	query := "SELECT * FROM orders WHERE 1=1"
 	var args []interface{}
@@ -62,6 +63,21 @@ func (repo *OrderRepository) GetAllWithFiltersQuery(ctx context.Context, custome
 			}
 			query += " AND delivery_status IN (" + strings.Join(placeholders, ",") + ")"
 		}
+	}
+
+	// Add date range filter
+	if fromDate != nil {
+		// Set fromDate to start of day (00:00:00)
+		startOfDay := time.Date(fromDate.Year(), fromDate.Month(), fromDate.Day(), 0, 0, 0, 0, fromDate.Location())
+		query += " AND order_date >= ?"
+		args = append(args, startOfDay)
+	}
+
+	if toDate != nil {
+		// Set toDate to end of day (23:59:59.999999999)
+		endOfDay := time.Date(toDate.Year(), toDate.Month(), toDate.Day(), 23, 59, 59, 999999999, toDate.Location())
+		query += " AND order_date <= ?"
+		args = append(args, endOfDay)
 	}
 
 	// Add sorting

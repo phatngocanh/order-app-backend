@@ -3,6 +3,7 @@ package v1
 import (
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	httpcommon "github.com/pna/order-app-backend/internal/domain/http_common"
@@ -94,7 +95,10 @@ func (h *OrderHandler) Update(ctx *gin.Context) {
 // @Param customer_id query int false "Filter by customer ID"
 // @Param delivery_statuses query string false "Filter by delivery statuses (comma-separated, e.g., PENDING,DELIVERED)"
 // @Param sort_by query string false "Sort by: order_date_asc, order_date_desc (default: id DESC)"
+// @Param from_date query string false "Filter from date (format: YYYY-MM-DD)"
+// @Param to_date query string false "Filter to date (format: YYYY-MM-DD)"
 // @Success 200 {object} httpcommon.HttpResponse[model.GetAllOrdersResponse]
+// @Failure 400 {object} httpcommon.HttpResponse[any]
 // @Failure 500 {object} httpcommon.HttpResponse[any]
 // @Router /orders [get]
 func (h *OrderHandler) GetAll(ctx *gin.Context) {
@@ -102,6 +106,8 @@ func (h *OrderHandler) GetAll(ctx *gin.Context) {
 	customerIDStr := ctx.Query("customer_id")
 	deliveryStatuses := ctx.Query("delivery_statuses")
 	sortBy := ctx.Query("sort_by")
+	fromDateStr := ctx.Query("from_date")
+	toDateStr := ctx.Query("to_date")
 
 	// Parse customer ID if provided
 	customerID := 0
@@ -111,7 +117,31 @@ func (h *OrderHandler) GetAll(ctx *gin.Context) {
 		}
 	}
 
-	response, errCode := h.orderService.GetAll(ctx, 0, customerID, deliveryStatuses, sortBy)
+	// Parse date filters
+	var fromDate *time.Time
+	var toDate *time.Time
+
+	if fromDateStr != "" {
+		if parsedDate, err := time.Parse("2006-01-02", fromDateStr); err == nil {
+			fromDate = &parsedDate
+		} else {
+			statusCode, errResponse := error_utils.ErrorCodeToHttpResponse(error_utils.ErrorCode.BAD_REQUEST, "from_date format should be YYYY-MM-DD")
+			ctx.JSON(statusCode, errResponse)
+			return
+		}
+	}
+
+	if toDateStr != "" {
+		if parsedDate, err := time.Parse("2006-01-02", toDateStr); err == nil {
+			toDate = &parsedDate
+		} else {
+			statusCode, errResponse := error_utils.ErrorCodeToHttpResponse(error_utils.ErrorCode.BAD_REQUEST, "to_date format should be YYYY-MM-DD")
+			ctx.JSON(statusCode, errResponse)
+			return
+		}
+	}
+
+	response, errCode := h.orderService.GetAll(ctx, 0, customerID, deliveryStatuses, sortBy, fromDate, toDate)
 	if errCode != "" {
 		statusCode, errResponse := error_utils.ErrorCodeToHttpResponse(errCode, "")
 		ctx.JSON(statusCode, errResponse)
